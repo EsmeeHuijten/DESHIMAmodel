@@ -274,10 +274,8 @@ def spectrometer_sensitivity(
     # because it is defined as how much power out of the crystat window couples to the cold sky.
     eta_forward = (eta_M1 * eta_M2_ohmic * eta_M2_spill * eta_wo +
                     (1.-eta_M2_spill) * eta_wo)
-    t0_dsm = time.time()
     # Calcuate eta. scalar/vector depending on F.
     eta_atm = eta_atm_func(F=F, pwv=pwv, EL=EL, R=R, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith)
-    t1_dsm = time.time()
     # Johnson-Nyquist Power Spectral Density (W/Hz) for the physical temperatures of each stage
 
     psd_jn_cmb   = johnson_nyquist_psd(F=F, T=Tb_cmb)
@@ -301,37 +299,37 @@ def spectrometer_sensitivity(
     psd_KID =       rad_trans(rad_in=psd_co,       medium=psd_jn_chip,    eta=eta_chip    )  # PSD absorbed by KID
     # Instrument optical efficiency as in JATIS 2019
     # (eta_inst can be calculated only after calculating eta_window)
-    eta_inst = eta_chip * eta_co * eta_window
+    # eta_inst = eta_chip * eta_co * eta_window
 
     # Calculating Sky loading, Warm loading and Cold loading individually for reference
     # (Not required for calculating Pkid, but serves as a consistency check.)
     # .................................................................................
 
     # Sky loading
-    psd_KID_sky_1 = psd_sky * eta_M1 * eta_M2_spill * eta_M2_ohmic * eta_wo * eta_inst
-    psd_KID_sky_2 = rad_trans(0, psd_sky, eta_M2_spill) * eta_M2_ohmic * eta_wo * eta_inst
-    psd_KID_sky = psd_KID_sky_1 + psd_KID_sky_2
+    # psd_KID_sky_1 = psd_sky * eta_M1 * eta_M2_spill * eta_M2_ohmic * eta_wo * eta_inst
+    # psd_KID_sky_2 = rad_trans(0, psd_sky, eta_M2_spill) * eta_M2_ohmic * eta_wo * eta_inst
+    # psd_KID_sky = psd_KID_sky_1 + psd_KID_sky_2
 
-    skycoup = psd_KID_sky / psd_sky # To compare with Jochem
+    # skycoup = psd_KID_sky / psd_sky # To compare with Jochem
 
-    # Warm loading
-    psd_KID_warm =  window_trans(F=F,psd_in=
-                        rad_trans(
-                            rad_trans(
-                                rad_trans(
-                                    rad_trans(0, psd_jn_amb, eta_M1),
-                                0, eta_M2_spill), # sky spillover does not count for warm loading
-                            psd_jn_amb, eta_M2_ohmic),
-                        psd_jn_cabin, eta_wo),
-                    psd_cabin=psd_jn_cabin, psd_co=0, window_AR=window_AR)[0] * eta_co * eta_chip
-
-    # Cold loading
-    psd_KID_cold =  rad_trans(
-                        rad_trans(
-                            window_trans(F=F, psd_in=0., psd_cabin=0., psd_co=psd_jn_co, window_AR=window_AR)[0],
-                        psd_jn_co, eta_co),
-                    psd_jn_chip, eta_chip)
-    t2_dsm = time.time()
+    # # Warm loading
+    # psd_KID_warm =  window_trans(F=F,psd_in=
+    #                     rad_trans(
+    #                         rad_trans(
+    #                             rad_trans(
+    #                                 rad_trans(0, psd_jn_amb, eta_M1),
+    #                             0, eta_M2_spill), # sky spillover does not count for warm loading
+    #                         psd_jn_amb, eta_M2_ohmic),
+    #                     psd_jn_cabin, eta_wo),
+    #                 psd_cabin=psd_jn_cabin, psd_co=0, window_AR=window_AR)[0] * eta_co * eta_chip
+    #
+    # # Cold loading
+    # psd_KID_cold =  rad_trans(
+    #                     rad_trans(
+    #                         window_trans(F=F, psd_in=0., psd_cabin=0., psd_co=psd_jn_co, window_AR=window_AR)[0],
+    #                     psd_jn_co, eta_co),
+    #                 psd_jn_chip, eta_chip)
+    # t2_dsm = time.time()
     #
     # # Loadig power absorbed by the KID
     # # .............................................
@@ -428,7 +426,7 @@ def spectrometer_sensitivity(
         pd.Series(eta_forward, name='eta_forward'),
         # pd.Series(eta_sw, name='eta_sw'),
         pd.Series(eta_window, name='eta_window'),
-        pd.Series(eta_inst, name='eta_inst'),
+        # pd.Series(eta_inst, name='eta_inst'),
         pd.Series(eta_circuit, name='eta_circuit'), #
         pd.Series(eta_lens_antenna_rad, name='eta_lens_antenna_rad'),
         pd.Series(T_from_psd(F, psd_sky), name='Tb_sky'),
@@ -438,7 +436,7 @@ def spectrometer_sensitivity(
         pd.Series(T_from_psd(F, psd_window), name='Tb_window'),
         pd.Series(T_from_psd(F, psd_co), name='Tb_co'),
         pd.Series(T_from_psd(F, psd_KID), name='Tb_KID'),
-        pd.Series(psd_KID, name='psd_KID'),
+        # pd.Series(psd_KID, name='psd_KID'),
         pd.Series(psd_co, name='psd_co'), # Result to be included in the rest of the model
         pd.Series(psd_jn_chip, name='psd_jn_chip'), #
         pd.Series(Pkid, name='Pkid'),
@@ -457,17 +455,11 @@ def spectrometer_sensitivity(
         pd.Series(on_source_fraction, name='on_source_fraction'),
         pd.Series(obs_hours*on_source_fraction, name='on_source_hours'),
         # pd.Series(Trx, name='equivalent_Trx'),
-        pd.Series(skycoup, name='skycoup'),
+        # pd.Series(skycoup, name='skycoup'),
         pd.Series(eta_Al_ohmic, name='eta_Al_ohmic'),
         # pd.Series(Pkid_warm_jochem, name='Pkid_warm_jochem')
         ], axis=1
         )
-    t3_dsm = time.time()
-    # print('first', t1_dsm-t0_dsm) #longest
-    # print('second', t2_dsm-t1_dsm)
-    # print('third', t3_dsm-t2_dsm)
-    # print('fourth', t4_dsm-t3_dsm)
-    # print('fifth', t5_dsm-t4_dsm)
     # Turn Scalar values into vectors
     result = result.fillna(method='ffill')
 
