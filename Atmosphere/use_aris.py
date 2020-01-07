@@ -11,7 +11,7 @@ from matplotlib.ticker import (
 import sys
 sys.path.insert(1, '../../')
 sys.path.insert(1, '../')
-from Atmosphere_model_Kah_Wuy.PhaseScreen_1.aris import load_aris_output
+from Atmosphere_model_Kah_Wuy.aris import load_aris_output
 
 class use_ARIS(object):
     def __init__(self, filename):
