@@ -13,7 +13,7 @@ sys.path.append('./DESHIMA/desim/')
 import desim as dsm
 sys.path.append('./DESHIMA/')
 import pyximport; pyximport.install()
-import Lorentzian
+# import Lorentzian
 
 h = 6.62607004 * 10**-34
 k = 1.38064852 * 10**-23
@@ -87,12 +87,12 @@ def D2goal_calc(F1, F2, num_bins_Lor, num_filters, R, pwv_value, eta_atm_df = pd
 
     F_bins_Lor_mesh, F_filters_mesh = np.meshgrid(F_bins_Lor, F_filters)
     #cython
-    psd_KID = Lorentzian.filter_response_function(F_bins_Lor_mesh, F_filters_mesh, R, eta_lens_antenna_rad, eta_circuit, psd_co, psd_jn_chip)
+    # psd_KID = Lorentzian.filter_response_function(F_bins_Lor_mesh, F_filters_mesh, R, eta_lens_antenna_rad, eta_circuit, psd_co, psd_jn_chip)
 
     # not cython
-    # eta_circuit = calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R) * math.pi * F_filters_mesh/(2 * R) * 0.35
-    # eta_chip = eta_lens_antenna_rad * eta_circuit
-    # psd_KID = dsm.rad_trans(np.transpose(np.array(psd_co)), np.transpose(np.array(psd_jn_chip)), eta_chip)
+    eta_circuit = calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R) * math.pi * F_filters_mesh/(2 * R) * 0.35
+    eta_chip = eta_lens_antenna_rad * eta_circuit
+    psd_KID = dsm.rad_trans(np.transpose(np.array(psd_co)), np.transpose(np.array(psd_jn_chip)), eta_chip)
 
     t3_desim = time.time()
     # print('first interval', t1_desim-t0_desim)

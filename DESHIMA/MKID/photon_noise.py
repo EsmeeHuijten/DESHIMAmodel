@@ -7,8 +7,8 @@ import scipy.special
 
 import sys
 sys.path.append('./DESHIMA/MKID/')
-import pyximport; pyximport.install()
-import timeSigBoost
+# import pyximport; pyximport.install()
+# import timeSigBoost
 
 class photon_noise(object):
     """
@@ -145,24 +145,24 @@ class photon_noise(object):
         # Make a mock-up time signal of the photon noise using the boosted NEP, by
         # drawing samples from the normal distribution
         #with cython
-        return timeSigBoost.calcTimeSigBoost(self.power, self.frequency, self.delta_F, self.sampling_rate, atm)
+        # return timeSigBoost.calcTimeSigBoost(self.power, self.frequency, self.delta_F, self.sampling_rate, atm)
 
         # without cython
-        # std_dev = self.calcNEPboosted() * np.sqrt(0.5*self.sampling_rate)
-        # if atm:
-        #     delta_y = np.zeros(self.power.shape)
-        #     num_filters = self.power.shape[0]
-        #     for i in range(0, num_filters):
-        #         delta_y[i, :] = np.random.normal(0, std_dev[i, :], len(std_dev[i, :]))
-        #     y = self.power + delta_y
-        #     return y
-        # else:
-        #     mean = self.power
-        #     N = int(photon_noise.sampling_rate * time)
-        #     x = np.linspace(0, time, N)
-        #     y_plot = np.random.normal(mean, std_dev, N)
-        #
-        # return [x, y_plot]
+        std_dev = self.calcNEPboosted() * np.sqrt(0.5*self.sampling_rate)
+        if atm:
+            delta_y = np.zeros(self.power.shape)
+            num_filters = self.power.shape[0]
+            for i in range(0, num_filters):
+                delta_y[i, :] = np.random.normal(0, std_dev[i, :], len(std_dev[i, :]))
+            y = self.power + delta_y
+            return y
+        else:
+            mean = self.power
+            N = int(photon_noise.sampling_rate * time)
+            x = np.linspace(0, time, N)
+            y_plot = np.random.normal(mean, std_dev, N)
+
+        return [x, y_plot]
 
     def drawTimeSignal(self, time, isBoosted):
         """Creates a plot of a mock-up time signal

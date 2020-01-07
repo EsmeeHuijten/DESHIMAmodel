@@ -110,6 +110,7 @@ class signal_transmitter(object):
         return [time_vector, power_matrix, filters] #x is the time, summed_signal_matrix is the power (stochastic signal)
 
     def transmit_signal_DESIM_multf_atm(self, windspeed, filename_atm_data, beam_radius):
+        print('Hello')
         self.num_samples = int(self.time*self.sampling_rate)
         time_vector = np.linspace(0, self.time, self.num_samples)
         #Initialize the power matrix
@@ -126,12 +127,13 @@ class signal_transmitter(object):
         start = time.time()
         inputs = range(self.num_samples)
         num_cores = multiprocessing.cpu_count()
-        power_matrix = Parallel(n_jobs=num_cores)(delayed(signal_transmitter.processInput)(i, self, pwv_matrix_filtered, time_vector[i], i, self.f_chop, windspeed, eta_atm_df, eta_atm_func_zenith, F_highres) for i in inputs)
+        print(num_cores) #now 63 hardcoded instead of num_cores
+        power_matrix = Parallel(n_jobs=32)(delayed(signal_transmitter.processInput)(i, self, pwv_matrix_filtered, time_vector[i], i, self.f_chop, windspeed, eta_atm_df, eta_atm_func_zenith, F_highres) for i in inputs)
         power_matrix_res = np.zeros([self.num_filters, self.num_samples])
         for j in range(self.num_samples):
             power_matrix_res[:, j] = power_matrix[j]
         # for i in range(0, self.num_samples):
-        #     # Obtain pwv for time = time_vector[i] and the corresponding piece of
+        #     # Obtain pwv for time = time_vector[i] and the corresponding piece of sky
         #     pwv_value = use_aris.use_ARIS.obt_pwv(pwv_matrix_filtered, time_vector[i], windspeed)
         #     t1 = time.time()
         #     # Obtain data from DESIM with the right pwv
@@ -165,7 +167,6 @@ class signal_transmitter(object):
 
     def processInput(i, self, pwv_matrix_filtered, time, count, f_chop, windspeed, eta_atm_df, eta_atm_func_zenith, F_highres):
         pwv_value = use_aris.use_ARIS.obt_pwv(pwv_matrix_filtered, time, count, f_chop, windspeed)
-        # pwv_value = np.linspace(1, 1.5, 5)
         [self.bin_centres, self.psd_bin_centres, filters] = use_desim.D2goal_calc(self.F_min, self.F_max, \
         self.num_bins, self.num_filters, self.R, pwv_value, eta_atm_df, F_highres, eta_atm_func_zenith)[1:4]
         # Calculate the power from psd_KID
@@ -182,9 +183,11 @@ class signal_transmitter(object):
         for i in range(0, self.num_filters):
             # name = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_Tb_sky\spline_' \
             # + '%.1f' % (filters[i]/1e9) +'GHz.npy'
-            name = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_Tb_sky\spline_' \
-            + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
-            f_load = np.load(name)
+            # name = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_Tb_sky\spline_' \
+            # + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
+            name = r'C:\Users\sup-ehuijten\Documents\DESHIMA-model_18_12_19\Python\BEP\Data\splines_Tb_sky\spline_' \
+             + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
+            f_load = np.load(name, allow_pickle= True)
             f_function = f_load.item()
             for j in range(0, power_matrix.shape[1]):
                 T_sky_matrix[i, j] = f_function(90., power_matrix[i, j])
@@ -238,6 +241,6 @@ class signal_transmitter(object):
 windspeed = 10 #m/s
 filename_atm_data = 'sample00.dat'
 beam_radius = 5. #m
-signal_transmitter_1 = signal_transmitter(220e9, 440e9, 1500, 275, 380, 500, 2.0, 350)
+signal_transmitter_1 = signal_transmitter(220e9, 440e9, 1500, 275, 380, 500, 2, 350)
 # print(signal_transmitter.transmit_signal_DESIM_multf2(signal_transmitter_1, windspeed, filename_atm_data, beam_radius))
 signal_transmitter_1.draw_signal(1, 1, 1, [5, 250, 320], windspeed, filename_atm_data, beam_radius)

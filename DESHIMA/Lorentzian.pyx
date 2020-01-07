@@ -1,5 +1,5 @@
 #cython: language_level=3
-import numpy as np
+import numpy as
 
 def filter_response_function(F_bins_Lor_mesh, F_filters_mesh, R, eta_lens_antenna_rad, eta_circuit, psd_co, psd_jn_chip):
   # F_bins_Lor_mesh, F_filters_mesh = np.meshgrid(F_bins_Lor, F_filters)

@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
 plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import os
 import numpy as np
 import matplotlib.animation as animation
 from matplotlib.transforms import Transform
 from matplotlib.ticker import (
     AutoLocator, AutoMinorLocator)
+
 import sys
 sys.path.insert(1, '../../')
 sys.path.insert(1, '../')
@@ -14,7 +16,12 @@ from Atmosphere_model_Kah_Wuy.PhaseScreen_1.aris import load_aris_output
 class use_ARIS(object):
     def __init__(self, filename):
         self.filename = filename
-        self.pathname = r'C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/output_ARIS/'
+        if __name__ == "__main__":
+            self.pathname = "../Data/output_ARIS/"
+        else:
+            # cwd = os.getcwd()
+            self.pathname ="C:/Users/sup-ehuijten/Documents/DESHIMA-model_18_12_19/Python/BEP/Data/output_ARIS/"
+            # self.pathname = ""
         # self.dEPL_matrix, self.pwv_matrix = load_aris_output(self.pathname + self.filename)
         self.dEPL_matrix = load_aris_output(self.pathname + self.filename)[0]
         self.a = 6.3003663 #m
@@ -24,18 +31,18 @@ class use_ARIS(object):
         self.pwv_shape = self.pwv_matrix.shape
 
     def obt_pwv(pwv_matrix, time, count, f_chop, windspeed):
-        # separation = 0.5663 #m (116.8 arcseconds)
+        # separation = 2*0.5663 #m (116.8 arcseconds)
         # sampling_rate = 160
-        # y = sampling_rate/f_chop
+        # y = sampling_rate/f_chop #number of samples per part of sky
         # z = 2*y
         # chop = (count % z < y)
         # print(chop)
         grid = 1 #number of m for 1 gridpoint, as given to ARIS
-        # grid_dif = round(separation/grid)
-        max_x = pwv_matrix.shape[0]
+        # grid_dif = round(separation/grid) #number of gridpoints difference between 'on' and 'off'
         distance = time*windspeed
-        # x_index = int(round(distance/grid)) + chop * grid_dif
-        x_index = int(round(distance/grid))
+        length_x = pwv_matrix.shape[0]
+        # x_index = (int(round(distance/grid)) + chop * grid_dif) % length_x
+        x_index = (int(round(distance/grid))) % length_x
         y_index = 250
         pwv = pwv_matrix[x_index, y_index]
         return pwv

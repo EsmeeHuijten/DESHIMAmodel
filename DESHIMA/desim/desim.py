@@ -308,35 +308,29 @@ def spectrometer_sensitivity(
     # .................................................................................
 
     # Sky loading
-    # added for different pwv values
-    # eta_M2_ohmic = eta_M2_ohmic.reshape([eta_M2_ohmic.shape[0], 1])
-    # eta_wo = eta_wo.reshape([eta_wo.shape[0], 1])
-    # eta_M1 = eta_M1.reshape([eta_M1.shape[0], 1])
-    # eta_inst = eta_inst.reshape([eta_inst.shape[0], 1])
-    #
-    # psd_KID_sky_1 = psd_sky * eta_M1 * eta_M2_spill * eta_M2_ohmic * eta_wo * eta_inst
-    # psd_KID_sky_2 = rad_trans(0, psd_sky, eta_M2_spill) * eta_M2_ohmic * eta_wo * eta_inst
-    # psd_KID_sky = psd_KID_sky_1 + psd_KID_sky_2
+    psd_KID_sky_1 = psd_sky * eta_M1 * eta_M2_spill * eta_M2_ohmic * eta_wo * eta_inst
+    psd_KID_sky_2 = rad_trans(0, psd_sky, eta_M2_spill) * eta_M2_ohmic * eta_wo * eta_inst
+    psd_KID_sky = psd_KID_sky_1 + psd_KID_sky_2
 
-    # skycoup = psd_KID_sky / psd_sky # To compare with Jochem
+    skycoup = psd_KID_sky / psd_sky # To compare with Jochem
 
     # Warm loading
-    # psd_KID_warm =  window_trans(F=F,psd_in=
-    #                     rad_trans(
-    #                         rad_trans(
-    #                             rad_trans(
-    #                                 rad_trans(0, psd_jn_amb, eta_M1),
-    #                             0, eta_M2_spill), # sky spillover does not count for warm loading
-    #                         psd_jn_amb, eta_M2_ohmic),
-    #                     psd_jn_cabin, eta_wo),
-    #                 psd_cabin=psd_jn_cabin, psd_co=0, window_AR=window_AR)[0] * eta_co * eta_chip
-    #
-    # # Cold loading
-    # psd_KID_cold =  rad_trans(
-    #                     rad_trans(
-    #                         window_trans(F=F, psd_in=0., psd_cabin=0., psd_co=psd_jn_co, window_AR=window_AR)[0],
-    #                     psd_jn_co, eta_co),
-    #                 psd_jn_chip, eta_chip)
+    psd_KID_warm =  window_trans(F=F,psd_in=
+                        rad_trans(
+                            rad_trans(
+                                rad_trans(
+                                    rad_trans(0, psd_jn_amb, eta_M1),
+                                0, eta_M2_spill), # sky spillover does not count for warm loading
+                            psd_jn_amb, eta_M2_ohmic),
+                        psd_jn_cabin, eta_wo),
+                    psd_cabin=psd_jn_cabin, psd_co=0, window_AR=window_AR)[0] * eta_co * eta_chip
+
+    # Cold loading
+    psd_KID_cold =  rad_trans(
+                        rad_trans(
+                            window_trans(F=F, psd_in=0., psd_cabin=0., psd_co=psd_jn_co, window_AR=window_AR)[0],
+                        psd_jn_co, eta_co),
+                    psd_jn_chip, eta_chip)
     t2_dsm = time.time()
     #
     # # Loadig power absorbed by the KID
@@ -463,7 +457,7 @@ def spectrometer_sensitivity(
         pd.Series(on_source_fraction, name='on_source_fraction'),
         pd.Series(obs_hours*on_source_fraction, name='on_source_hours'),
         # pd.Series(Trx, name='equivalent_Trx'),
-        # pd.Series(skycoup, name='skycoup'),
+        pd.Series(skycoup, name='skycoup'),
         pd.Series(eta_Al_ohmic, name='eta_Al_ohmic'),
         # pd.Series(Pkid_warm_jochem, name='Pkid_warm_jochem')
         ], axis=1
@@ -534,9 +528,7 @@ def eta_atm_func(F, pwv, EL=60., R=0, eta_atm_df = pd.Series([]), F_highres = pd
     if type(eta_atm_func_zenith) != interp2d:
         eta_atm_func_zenith = eta_atm_interp(eta_atm_df)
     t2_eta = time.time()
-    # print(eta_atm_func_zenith([1.0, 1.1], 300e9))
     eta_atm = np.abs(eta_atm_func_zenith(pwv, F)) ** (1./np.sin(EL*np.pi/180.))
-    print(eta_atm.shape)
     # print('shape F', F.shape)
     # print('shape eta_atm', np.squeeze(eta_atm).shape)
     # if R == 0:
@@ -636,15 +628,6 @@ def rad_trans(rad_in, medium, eta):
     rad_out : brightness temperature (or PSD) of the output
 
     """
-    # print('rad_in', rad_in.shape)
-    # print('medium', medium.type)
-    # if rad_in.ndim == 1:
-    #     # print('rad_in edited')
-    #     rad_in = rad_in.reshape((rad_in.shape[0], 1))
-    # if medium.ndim == 1:
-    #     medium = medium.reshape((medium.shape[0], 1))
-    # if not isinstance(eta, float) and eta.ndim == 1:
-    #     eta = eta.reshape((eta.shape[0], 1))
     rad_out = eta * rad_in + (1 - eta) * medium
     return rad_out
 
