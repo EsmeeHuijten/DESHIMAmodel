@@ -10,7 +10,7 @@ from scipy import integrate
 
 import sys
 sys.path.append('./DESHIMA/desim/')
-import desim as dsm
+import minidesim as dsm
 sys.path.append('./DESHIMA/')
 import pyximport; pyximport.install()
 # import Lorentzian

@@ -17,7 +17,7 @@ import sys
 # plt.rcParams['figure.constrained_layout.use'] = True
 plt.rc('font', size=10)
 
-import DESHIMA.desim.desim as dsm
+import DESHIMA.desim.minidesim as dsm
 import Atmosphere.use_aris as use_aris
 import Telescope.telescope_transmission as tt
 import DESHIMA.use_desim as use_desim
@@ -241,6 +241,6 @@ class signal_transmitter(object):
 windspeed = 10 #m/s
 filename_atm_data = 'sample00.dat'
 beam_radius = 5. #m
-signal_transmitter_1 = signal_transmitter(220e9, 440e9, 1500, 275, 380, 500, 2, 350)
+signal_transmitter_1 = signal_transmitter(220e9, 440e9, 1500, 275, 380, 500, 0.2, 350)
 # print(signal_transmitter.transmit_signal_DESIM_multf2(signal_transmitter_1, windspeed, filename_atm_data, beam_radius))
 signal_transmitter_1.draw_signal(1, 1, 1, [5, 250, 320], windspeed, filename_atm_data, beam_radius)
