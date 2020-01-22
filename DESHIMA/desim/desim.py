@@ -359,11 +359,11 @@ def spectrometer_sensitivity(
     # # Efficiencies
     # # .........................................................
     #
-    # Ag = np.pi * (telescope_diameter/2.)**2.  # Geometric area of the telescope
-    # omega_mb = np.pi * theta_maj * theta_min / np.log(2) / 4 # Main beam solid angle
-    # omega_a = omega_mb / eta_mb # beam solid angle
-    # Ae = (c/F)**2 / omega_a # Effective Aperture (m^2): lambda^2 / omega_a
-    # eta_a = Ae/Ag # Aperture efficiency
+    Ag = np.pi * (telescope_diameter/2.)**2.  # Geometric area of the telescope
+    omega_mb = np.pi * theta_maj * theta_min / np.log(2) / 4 # Main beam solid angle
+    omega_a = omega_mb / eta_mb # beam solid angle
+    Ae = (c/F)**2 / omega_a # Effective Aperture (m^2): lambda^2 / omega_a
+    eta_a = Ae/Ag # Aperture efficiency
     #
     # # Coupling from the "S"ource to outside of "W"indow
     # eta_pol = 0.5 # Instrument is single polarization

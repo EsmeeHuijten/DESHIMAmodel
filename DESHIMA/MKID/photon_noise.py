@@ -35,7 +35,7 @@ class photon_noise(object):
     delta_Al = 188e-6 * 1.602e-19
     eta = 0.4
 
-    def __init__(self, power, frequency, spec_res = 380):
+    def __init__(self, power, frequency, spec_res = 500):
         self.power = power
         self.frequency = frequency
         self.spec_res = spec_res
@@ -123,7 +123,7 @@ class photon_noise(object):
 
         return [x, y_plot]
 
-    def calcTimeSignalBoosted(self, time, atm = 0):
+    def calcTimeSignalBoosted(self, time = 1, atm = 0):
         """Calculates a mock-up time signal of the photon noise using the complete (or boosted) NEP,
             by drawing samples from the Poisson distribution with parameter
             lambda = NEP_s^2 * 1/2 * sampling_rate
@@ -150,10 +150,12 @@ class photon_noise(object):
         # without cython
         std_dev = self.calcNEPboosted() * np.sqrt(0.5*self.sampling_rate)
         if atm:
-            delta_y = np.zeros(self.power.shape)
-            num_filters = self.power.shape[0]
-            for i in range(0, num_filters):
-                delta_y[i, :] = np.random.normal(0, std_dev[i, :], len(std_dev[i, :]))
+            # delta_y = np.zeros(self.power.shape)
+            # num_filters = self.power.shape[0]
+            delta_y = np.random.normal(0, std_dev, std_dev.shape)
+            # print('delta_y', delta_y.shape)
+            # for i in range(0, num_filters):
+                # delta_y[i, :] = np.random.normal(0, std_dev[i, :], len(std_dev[i, :]))
             y = self.power + delta_y
             return y
         else:
@@ -190,5 +192,8 @@ class photon_noise(object):
         plt.title('Mock-up time signal of photon noise using the '+ titleString)
         plt.show()
 
-# noise_1 = photon_noise(1e-13, 300e9, 380)
+# power = np.random.rand(4, 2, 3)*1e-13
+# frequency = np.linspace(220e9, 440e9, 3)
+# noise_1 = photon_noise(power, frequency, 500)
+# print(noise_1.calcNEPboosted())
 # noise_1.drawTimeSignal(2.0, 1)

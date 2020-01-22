@@ -70,6 +70,7 @@ def spectrometer_sensitivity(
         snr=5.,
         obs_hours=10.,
         on_source_fraction=0.4*0.9,
+        psd_gal = 0,
         on_off = True
         ):
     """
@@ -262,7 +263,7 @@ def spectrometer_sensitivity(
 
     # Ohmic loss as a function of frequency, from skin effect scaling
     eta_Al_ohmic = (1.-(1.-eta_Al_ohmic_850)*np.sqrt(F/850.e9))
-    # eta_Al_ohmic = eta_Al_ohmic.reshape([eta_Al_ohmic.shape[0], 1])
+    eta_Al_ohmic = eta_Al_ohmic.reshape([eta_Al_ohmic.shape[0], 1])
     eta_M1_ohmic = eta_Al_ohmic
     eta_M2_ohmic = eta_Al_ohmic
 
@@ -274,22 +275,21 @@ def spectrometer_sensitivity(
     # Calcuate eta. scalar/vector depending on F.
     eta_atm = eta_atm_func(F=F, pwv=pwv, EL=EL, R=R, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith)
     # Johnson-Nyquist Power Spectral Density (W/Hz) for the physical temperatures of each stage
-
-    psd_jn_cmb   = johnson_nyquist_psd(F=F, T=Tb_cmb)
-    # psd_jn_cmb = psd_jn_cmb.reshape([psd_jn_cmb.shape[0], 1])
+    psd_jn_cmb_and_gal   = johnson_nyquist_psd(F=F, T=Tb_cmb) + psd_gal
+    psd_jn_cmb_and_gal = psd_jn_cmb_and_gal.reshape([psd_jn_cmb_and_gal.shape[0], 1])
     psd_jn_amb   = johnson_nyquist_psd(F=F, T=Tp_amb)
-    # psd_jn_amb = psd_jn_amb.reshape([psd_jn_amb.shape[0], 1])
+    psd_jn_amb = psd_jn_amb.reshape([psd_jn_amb.shape[0], 1])
     psd_jn_cabin = johnson_nyquist_psd(F=F, T=Tp_cabin)
-    # psd_jn_cabin = psd_jn_cabin.reshape([psd_jn_cabin.shape[0], 1])
+    psd_jn_cabin = psd_jn_cabin.reshape([psd_jn_cabin.shape[0], 1])
     psd_jn_co    = johnson_nyquist_psd(F=F, T=Tp_co)
-    # psd_jn_co = psd_jn_co.reshape([psd_jn_co.shape[0], 1])
+    psd_jn_co = psd_jn_co.reshape([psd_jn_co.shape[0], 1])
     psd_jn_chip  = johnson_nyquist_psd(F=F, T=Tp_chip)
-    # psd_jn_chip = psd_jn_chip.reshape([psd_jn_chip.shape[0], 1])
+    psd_jn_chip = psd_jn_chip.reshape([psd_jn_chip.shape[0], 1])
     # Optical Chain
     # Sequentially calculate the Power Spectral Density (W/Hz) at each stage.
     # Uses only basic radiation transfer: rad_out = eta*rad_in + (1-eta)*medium
 
-    psd_sky =       rad_trans(rad_in=psd_jn_cmb,   medium=psd_jn_amb,     eta=eta_atm     )
+    psd_sky =       rad_trans(rad_in=psd_jn_cmb_and_gal,   medium=psd_jn_amb,     eta=eta_atm     )
     psd_M1  =       rad_trans(rad_in=psd_sky,      medium=psd_jn_amb,     eta=eta_M1      )
     psd_M2_spill =  rad_trans(rad_in=psd_M1,       medium=psd_sky,        eta=eta_M2_spill) # Note that the spillover of M2 is to the
     psd_M2 =        rad_trans(rad_in=psd_M2_spill, medium=psd_jn_amb,     eta=eta_M2_ohmic)
@@ -303,46 +303,48 @@ def spectrometer_sensitivity(
     # # Loadig power absorbed by the KID
     # # .............................................
     W_F_cont = F/500/eta_IBF # hardcoded with R = 500
-    # W_F_cont = W_F_cont.reshape([W_F_cont.shape[0], 1])
+    W_F_cont = W_F_cont.reshape([W_F_cont.shape[0], 1])
+    # print('psd_KID', psd_KID.shape)
+    # print('W_F_cont', W_F_cont.shape)
     Pkid = psd_KID * W_F_cont
 
     # ############################################
-    # 3. Output results as Pandas DataFrame
+    # 3. Output results as dictionary
     # ############################################
 
-    result = pd.concat([
-        pd.Series(F, name='F'),
-        pd.Series(pwv, name='PWV'),
-        pd.Series(EL, name='EL'),
-        pd.Series(eta_atm, name='eta_atm'),
-        pd.Series(R, name='R'),
-        pd.Series(theta_maj, name='theta_maj'),
-        pd.Series(theta_min, name='theta_min'),
-        pd.Series(eta_mb, name='eta_mb'),
-        pd.Series(eta_window, name='eta_window'),
-        pd.Series(eta_circuit, name='eta_circuit'), #
-        pd.Series(eta_lens_antenna_rad, name='eta_lens_antenna_rad'),
-        pd.Series(T_from_psd(F, psd_sky), name='Tb_sky'),
-        pd.Series(T_from_psd(F, psd_M1), name='Tb_M1'),
-        pd.Series(T_from_psd(F, psd_M2), name='Tb_M2'),
-        pd.Series(T_from_psd(F, psd_wo), name='Tb_wo'),
-        pd.Series(T_from_psd(F, psd_window), name='Tb_window'),
-        pd.Series(T_from_psd(F, psd_co), name='Tb_co'),
-        pd.Series(T_from_psd(F, psd_KID), name='Tb_KID'),
-        # pd.Series(psd_KID, name='psd_KID'),
-        pd.Series(psd_co, name='psd_co'), # Result to be included in the rest of the model
-        pd.Series(psd_jn_chip, name='psd_jn_chip'), #
-        pd.Series(Pkid, name='Pkid'),
-        pd.Series(obs_hours, name='obs_hours'),
-        pd.Series(on_source_fraction, name='on_source_fraction'),
-        pd.Series(obs_hours*on_source_fraction, name='on_source_hours'),
-        pd.Series(eta_Al_ohmic, name='eta_Al_ohmic'),
-        ], axis=1
-        )
+    result = {
+        'F': F,
+        'eta_atm': eta_atm,
+        'psd_co': psd_co,
+        'psd_jn_chip': psd_jn_chip,
+        'psd_KID': psd_KID
+    }
     # Turn Scalar values into vectors
-    result = result.fillna(method='ffill')
+    # result = result.fillna(method='ffill')
 
     return result
+
+def calc_eff_aper(F, beam_radius):
+    # Galaxy spectrum
+    c = 299792458.
+    eta_mb = eta_mb_ruze(F=F,LFlimit=0.805,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+    theta_maj = D2HPBW(F)
+    theta_min = D2HPBW(F)
+    Ag = np.pi * (beam_radius)**2.  # Geometric area of the telescope
+    omega_mb = np.pi * theta_maj * theta_min / np.log(2) / 4 # Main beam solid angle
+    omega_a = omega_mb / eta_mb # beam solid angle
+    Ae = (c/F)**2 / omega_a # Effective Aperture (m^2): lambda^2 / omega_a
+    return Ae
+
+def D2HPBW(F):
+    HPBW = 29.*240./(F/1e9) * np.pi / 180. / 60. / 60.
+    return HPBW
+
+def eta_mb_ruze(F, LFlimit, sigma):
+    '''F in Hz, LFlimit is the eta_mb at => 0 Hz, sigma in m'''
+    c = 299792458.
+    eta_mb = LFlimit* np.exp(- (4.*np.pi* sigma * F/c)**2. )
+    return eta_mb
 
 def load_eta_atm():
     eta_atm_df = pd.read_csv(
@@ -517,7 +519,7 @@ def window_trans(
 
     eta_HDPE = np.exp(-thickness * 2 * np.pi * neffHDPE *
                       (tandelta * F / c + tan2delta * (F / c)**2))
-    # eta_HDPE = eta_HDPE.reshape([eta_HDPE.shape[0], 1])
+    eta_HDPE = eta_HDPE.reshape([eta_HDPE.shape[0], 1])
     # most of the reflected power sees the cold.
     psd_after_1st_refl = rad_trans(psd_in, psd_co, 1.-HDPErefl)
     psd_before_2nd_refl = rad_trans(psd_after_1st_refl, psd_cabin, eta_HDPE)

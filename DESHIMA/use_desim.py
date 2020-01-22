@@ -38,7 +38,7 @@ def eta_mb_ruze(F, LFlimit, sigma):
     eta_mb = LFlimit* np.exp(- (4.*np.pi* sigma * F/c)**2. )
     return eta_mb
 
-def D2goal_calc(F1, F2, num_bins_Lor, num_filters, R, pwv_value, eta_atm_df = pd.Series([]), F_highres = pd.Series([]), eta_atm_func_zenith = pd.Series([])):
+def D2goal_calc(F1, F2, num_bins_Lor, num_filters, R, pwv_value, eta_atm_df = pd.Series([]), F_highres = pd.Series([]), eta_atm_func_zenith = pd.Series([]), psd_gal = pd.Series([])):
     # multiple filters
     t0_desim = time.time()
     F_filters = np.linspace(F1, F2, num_filters)
@@ -48,7 +48,7 @@ def D2goal_calc(F1, F2, num_bins_Lor, num_filters, R, pwv_value, eta_atm_df = pd
 
     HPBW = D2HPBW(F_bins_Lor)
     eta_mb = eta_mb_ruze(F=F_bins_Lor,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
-    eta_circuit = 0.35
+    eta_circuit_simple = 0.35
     D2goal_input ={
         'eta_atm_df': eta_atm_df,
         'F_highres': F_highres,
@@ -63,7 +63,7 @@ def D2goal_calc(F1, F2, num_bins_Lor, num_filters, R, pwv_value, eta_atm_df = pd
         'window_AR' : window_AR,
         'eta_co' : 0.65, # product of co spillover, qo filter
         'eta_lens_antenna_rad' : eta_lens_antenna_rad, # D2_2V3.pdf, p14: front-to-back ratio 0.93 * reflection efficiency 0.9 * matching 0.98 * antenna spillover 0.993
-        'eta_circuit' : eta_circuit, # 'Alejandro Efficiency', from the feedpoint of the antenna to being absorbed in the KID.
+        'eta_circuit' : eta_circuit_simple, # 'Alejandro Efficiency', from the feedpoint of the antenna to being absorbed in the KID.
         'eta_IBF' : 0.6,
         'KID_excess_noise_factor' : 1.1,
         'theta_maj' : HPBW,
@@ -76,28 +76,36 @@ def D2goal_calc(F1, F2, num_bins_Lor, num_filters, R, pwv_value, eta_atm_df = pd
         'Tp_chip' : 0.12,
         'snr' : 5,
         'obs_hours' :8.,
-        'on_source_fraction':0.4*0.9 # ON-OFF 40%, calibration overhead of 10%
+        'on_source_fraction':0.4*0.9, # ON-OFF 40%, calibration overhead of 10%
+        'psd_gal': psd_gal
     }
     t1_desim = time.time()
     D2goal = dsm.spectrometer_sensitivity(**D2goal_input) # takes a lot of time
     t2_desim = time.time()
     psd_co = D2goal['psd_co'] #vector because of F
     psd_jn_chip = D2goal['psd_jn_chip']
-
+    # print('psd_jn_chip', psd_jn_chip.shape)
+    # print('psd_co', psd_co.shape)
 
     F_bins_Lor_mesh, F_filters_mesh = np.meshgrid(F_bins_Lor, F_filters)
     #cython
     # psd_KID = Lorentzian.filter_response_function(F_bins_Lor_mesh, F_filters_mesh, R, eta_lens_antenna_rad, eta_circuit, psd_co, psd_jn_chip)
 
     # not cython
-    eta_circuit = calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R) * math.pi * F_filters_mesh/(2 * R) * 0.35
+    eta_circuit = calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R) * math.pi * F_filters_mesh/(2 * R) * eta_circuit_simple
     eta_chip = eta_lens_antenna_rad * eta_circuit
-    psd_KID = dsm.rad_trans(np.transpose(np.array(psd_co)), np.transpose(np.array(psd_jn_chip)), eta_chip)
+    # psd_KID = dsm.rad_trans(np.transpose(np.array(psd_co)), np.transpose(np.array(psd_jn_chip)), eta_chip)
 
-    t3_desim = time.time()
-    # print('first interval', t1_desim-t0_desim)
-    # print('second interval', t2_desim-t1_desim) #longest
-    # print('third interval', t3_desim-t2_desim)
+    # calculate psd_KID with different values for pwv
+    psd_medium = np.transpose((1-eta_chip)*np.transpose(np.array(psd_jn_chip)))
+    psd_KID = np.zeros([psd_co.shape[1], num_filters, num_bins_Lor])
+    for i in range(num_bins_Lor):
+        psd_co_i = psd_co[i, :].reshape(psd_co[i, :].shape[0], 1)
+        eta_chip_i = eta_chip[:, i].reshape(1, eta_chip[:, i].shape[0])
+        psd_KID_in_i = eta_chip_i*psd_co_i
+        result = psd_KID_in_i + psd_medium[i, :]
+        psd_KID[:, :, i] = result
+
     return D2goal, F_bins_Lor, psd_KID, F_filters
 
 def getpsd_KID():

@@ -27,7 +27,8 @@
 
 ### GHztoMicrometer,
 # Turns the frequency [GHz] to wavelength [um]
-
+import sys
+sys.path.append('./GalaxySpectrum/')
 def LFIRtoInt(LFIR,z,lam,sfr):
     # Turn a LFIR and redshift in an intensity at the frequency observed at earth
     import MP
@@ -99,19 +100,23 @@ def LFIRtoSL(Luminosity,z,variance,COlines='Kamenetzky',lines='Bonato',giveNames
     outputArray = np.zeros([25,4])
     # Load spectral line intensities
     if COlines == 'Kamenetzky':
-        slco = np.genfromtxt('./K17_Table7', skip_header=1, dtype=np.float, delimiter=", ", unpack = False)
+        if __name__ == "__main__":
+            path = ''
+        else:
+            path = './GalaxySpectrum'
+        slco = np.genfromtxt(path + './K17_Table7', skip_header=1, dtype=np.float, delimiter=", ", unpack = False)
     elif COlines == 'Rosenboom':
-        slco = np.loadtxt('./COcoeff', dtype=np.float, delimiter=" ", unpack = False)
+        slco = np.loadtxt(path + './COcoeff', dtype=np.float, delimiter=" ", unpack = False)
     else:
         print('Did not recognise the CO-lines library, will be using Kamenetzky')
-        slco = np.genfromtxt('./K17_Table7', skip_header=1, dtype=np.float, delimiter=", ", unpack = False)
+        slco = np.genfromtxt(path + './K17_Table7', skip_header=1, dtype=np.float, delimiter=", ", unpack = False)
     if lines == 'Bonato':
-        sl = np.loadtxt('./coeffBonato', dtype=np.float, delimiter="    ", unpack = False)
+        sl = np.loadtxt(path + './coeffBonato', dtype=np.float, delimiter="    ", unpack = False)
     elif lines == 'Spinoglio':
-        sl = np.loadtxt('./coeff_spinoglio', dtype=np.float, delimiter=", ", unpack = False)
+        sl = np.loadtxt(path + './coeff_spinoglio', dtype=np.float, delimiter=", ", unpack = False)
     else:
         print('Did not recognise the line-library, will be using Bonatos line estimates')
-        sl = np.loadtxt('./coeffBonato', dtype=np.float, delimiter="    ", unpack = False)
+        sl = np.loadtxt(path + './coeffBonato', dtype=np.float, delimiter="    ", unpack = False)
     for i in range(13):
         outputArray[i,0] = ((1.e-9)*(i+1)*(115*(10**9))/(1+z)) # The CO lines 1-0 to 13-12
     outputArray[13,0] = ((1.e-9)*c/((1+z)*33.48e-6)) # SIII
@@ -352,4 +357,3 @@ def calculateNEWMDLF(Frequency, PWV,roughness=42,Disp=400.,t_hours=1.,printTau=F
 def giveTime(i,z,L):
     A = LFIRtoSL(L,z,0)
     return (calculateNEWMDLF(A[i,0],1.0)/A[i,1])**2
-

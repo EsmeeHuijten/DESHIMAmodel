@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
+import math
 import numpy as np
 import matplotlib.animation as animation
 from matplotlib.transforms import Transform
@@ -12,40 +13,69 @@ import sys
 sys.path.insert(1, '../../')
 sys.path.insert(1, '../')
 from Atmosphere_model_Kah_Wuy.aris import load_aris_output
+import Telescope.telescope_transmission as tt
 
 class use_ARIS(object):
-    def __init__(self, filename):
-        self.filename = filename
+
+    a = 6.3003663 #m
+    pwv_0 = 1.0 #mm
+    separation = 2*0.5663 #m (116.8 arcseconds)
+    x_length_strip = 32768
+
+    def __init__(self, prefix_filename, grid, windspeed, time):
+        self.prefix_filename = prefix_filename
+        self.grid = grid
+        self.windspeed = windspeed
         if __name__ == "__main__":
             self.pathname = "../Data/output_ARIS/"
         else:
             # cwd = os.getcwd()
-            self.pathname ="C:/Users/sup-ehuijten/Documents/DESHIMA-model_18_12_19/Python/BEP/Data/output_ARIS/"
-            # self.pathname = ""
-        # self.dEPL_matrix, self.pwv_matrix = load_aris_output(self.pathname + self.filename)
-        self.dEPL_matrix = load_aris_output(self.pathname + self.filename)[0]
-        self.a = 6.3003663 #m
-        self.pwv_0 = 1.0 #mm
+            self.pathname ="C:/Users/sup-ehuijten/Documents/GitHub/DESHIMAmodel/Data/output_ARIS/"
+        self.filtered_pwv_matrix = "None"
+        self.initialize_pwv_matrix(time)
+
+    def initialize_pwv_matrix(self, time):
+        max_distance = (time*self.windspeed + 2*self.separation)
+        max_x_index = math.ceil(max_distance/self.grid)
+        num_strips = math.ceil(max_x_index/self.x_length_strip)
+        print('num_strips', num_strips)
+        for i in range(num_strips):
+            filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
+            d = np.loadtxt(self.pathname + filename, delimiter=',')
+            nx = int(max(d[:, 0])) + 1
+            ny = int(max(d[:, 1])) + 1
+            epl= np.zeros([nx,ny])
+            for j in range(len(d)):
+                epl[int(d[j, 0]), int(d[j, 1])] = int(d[j, 2])
+            if i == 0:
+                self.dEPL_matrix = epl[:, 0:30]
+            else:
+                # print('shape dEPL matrix part', self.dEPL_matrix.shape)
+                # print('shape new part', epl.shape)
+                self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:30]), axis = 0)
+        print('shape EPL matrix', self.dEPL_matrix.shape)
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
         self.pwv_matrix = np.array(self.pwv_matrix)
-        self.pwv_shape = self.pwv_matrix.shape
+        # self.filtered_pwv_matrix = self.tt_instance.filter_with_Gaussian(self.pwv_matrix, self.beam_radius)
 
-    def obt_pwv(pwv_matrix, time, count, f_chop, windspeed):
-        # separation = 2*0.5663 #m (116.8 arcseconds)
-        # sampling_rate = 160
-        # y = sampling_rate/f_chop #number of samples per part of sky
-        # z = 2*y
-        # chop = (count % z < y)
-        # print(chop)
-        grid = 1 #number of m for 1 gridpoint, as given to ARIS
-        # grid_dif = round(separation/grid) #number of gridpoints difference between 'on' and 'off'
-        distance = time*windspeed
+    def obt_pwv(self, time, count, f_chop, windspeed):
+        pwv_matrix = self.filtered_pwv_matrix
         length_x = pwv_matrix.shape[0]
-        # x_index = (int(round(distance/grid)) + chop * grid_dif) % length_x
-        x_index = (int(round(distance/grid))) % length_x
-        y_index = 250
-        pwv = pwv_matrix[x_index, y_index]
+        positions = self.calc_coordinates(time, windspeed)
+        pwv = np.array([pwv_matrix[positions[0]], pwv_matrix[positions[1]], pwv_matrix[positions[2]], pwv_matrix[positions[3]], pwv_matrix[positions[4]]])
         return pwv
+
+    def calc_coordinates(self, time, windspeed):
+        grid_dif = int(round(self.separation/self.grid)) #number of gridpoints difference between positions
+        distance = time*windspeed
+        x_index = (int(round(distance/self.grid)))
+        y_index = 14 #15th value, 3 m above the bottom of the map
+        pos_1 = x_index, y_index
+        pos_2 = (x_index + grid_dif), y_index
+        pos_3 = (x_index + 2*grid_dif), y_index
+        pos_4 = (x_index + grid_dif), y_index + grid_dif
+        pos_5 = (x_index + grid_dif), y_index - grid_dif
+        return [pos_1, pos_2, pos_3, pos_4, pos_5]
 
     def make_image(self):
         fig = plt.figure()
@@ -86,9 +116,10 @@ class use_ARIS(object):
         ax.set_xlabel("[m]")
         ax.set_ylabel("[m]")
         ax.set_title("Atmosphere Structure")
-        num_frames = min(self.pwv_shape[0], self.pwv_shape[1])-length_side
-        y_min = int(np.round(self.pwv_shape[0]/2) - np.round(length_side/2))
-        y_max = int(np.round(self.pwv_shape[0]/2) + np.round(length_side/2))
+        pwv_shape = self.pwv_matrix.shape
+        num_frames = min(pwv_shape[0], pwv_shape[1])-length_side
+        y_min = int(np.round(pwv_shape[0]/2) - np.round(length_side/2))
+        y_max = int(np.round(pwv_shape[0]/2) + np.round(length_side/2))
         x_min = 0
         x_max = length_side
         self.pwv_matrix = self.pwv_matrix[y_min:y_max, :]

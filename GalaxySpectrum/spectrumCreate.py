@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import os
 import os.path
 import glob
+import sys
+sys.path.append('./GalaxySpectrum/')
 import GiveSL as gl
 
 orange = '#ff9500'#(1,0.584,0)
@@ -101,15 +103,16 @@ def gaus(x,a,x0,sigma):
 ##
 ##-----------------------------------------
 
-def giveSpectrumInclSLs(luminosity,redshift,fLow=100,fHigh=3000,dfArray=0.01,linewidth=300):
+def giveSpectrumInclSLs(luminosity,redshift,fLow=220,fHigh=440,numFreqBins = 1500,linewidth=300): #now hardcoded
 	# Luminosity in units of log(L_fir [L_sol])
-	# fLow, fHigh, dfArray in units of GHz
+	# fLow, fHigh in units of GHz
 	# linewidth in units of km/s
 	# Output: freqArray -> frequencies in units of GHz
 	# Output: spectrum -> the spectrum in units of Jy
 	import numpy as np
 	# Generate frequency array
-	freqArray = np.linspace(fLow,fHigh,int(1+(fHigh-fLow)/dfArray),endpoint=True)
+	freqArray = np.linspace(fLow,fHigh, numFreqBins)
+    # print(len(freqArray))
 	# Create spectrum according to Bakx+2018
 	spectrum = tomModel(freqArray*(1.e9),1,redshift,T_cold,T_hot,Ratio,Beta)
 	# Normalize the flux to the given far-IR luminosity
@@ -124,30 +127,30 @@ def giveSpectrumInclSLs(luminosity,redshift,fLow=100,fHigh=3000,dfArray=0.01,lin
 
 
 B,names = gl.LFIRtoSL(12,2,0,giveNames='Table')
-print(names)
+# print(names)
 
 ##-----------------------------------------
 ## Save the plots
 ##-----------------------------------------
 
-frequency,spectrum=giveSpectrumInclSLs(12,2)
-plt.loglog(frequency,spectrum,color=blue,label='Redshift = 2')
-frequency,spectrum=giveSpectrumInclSLs(12,4)
-plt.loglog(frequency,spectrum,color=grey,label='Redshift = 4')
-frequency,spectrum=giveSpectrumInclSLs(12,6)
-plt.loglog(frequency,spectrum,color=orange,label='Redshift = 6')
-plt.legend(loc='best',facecolor='white',edgecolor='none')
-plt.xlim([200,500])
-plt.ylim([2e-4,2e-2])
+# frequency,spectrum=giveSpectrumInclSLs(12,2)
+# plt.loglog(frequency,spectrum,color=blue,label='Redshift = 2')
+# frequency,spectrum=giveSpectrumInclSLs(12,4)
+# plt.loglog(frequency,spectrum,color=grey,label='Redshift = 4')
+# frequency,spectrum=giveSpectrumInclSLs(12,6)
+# plt.loglog(frequency,spectrum,color=orange,label='Redshift = 6')
+# plt.legend(loc='best',facecolor='white',edgecolor='none')
+# plt.xlim([200,500])
+# plt.ylim([2e-4,2e-2])
 
 ##-----------------------------------------
 ## Save the plots
 ##-----------------------------------------
 
-plt.xlabel('Frequency [GHz]')
-plt.ylabel('Flux density [Jy]')
-plt.tight_layout()
-# plt.savefig('Spectrum.png')
-# plt.savefig('Spectrum.pdf')
-plt.show()
+# plt.xlabel('Frequency [GHz]')
+# plt.ylabel('Flux density [Jy]')
+# plt.tight_layout()
+# # plt.savefig('Spectrum.png')
+# # plt.savefig('Spectrum.pdf')
+# plt.show()
 #plt.close()
