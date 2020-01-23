@@ -112,6 +112,14 @@ class signal_transmitter(object):
 
         return [time_vector, power_matrix, filters] #x is the time, summed_signal_matrix is the power (stochastic signal)
 
+    def save_filtered_pwv_map(self, prefix_atm_data, grid, beam_radius):
+        windspeed = 1320000.0/self.time
+        aris_instance = use_aris.use_ARIS(prefix_atm_data, grid, windspeed, self.time)
+        tt_instance = tt.telescope_transmission()
+        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, beam_radius)
+        filename_F= "C:/Users/sup-ehuijten/Documents/GitHub/DESHIMAmodel/Data/output_ARIS/complete_filtered_pwv_map.txt"
+        np.savetxt(filename_F, aris_instance.filtered_pwv_matrix)
+
     def transmit_signal_DESIM_multf_atm(self, windspeed, prefix_atm_data, grid, beam_radius):
         self.num_samples = int(self.time*self.sampling_rate)
         time_vector = np.linspace(0, self.time, self.num_samples)
@@ -156,11 +164,11 @@ class signal_transmitter(object):
     def convert_P_to_Tsky(self, power_matrix, filters):
         T_sky_matrix = np.zeros(power_matrix.shape)
         for i in range(0, self.num_filters):
-            # name = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_Tb_sky\spline_' \
+            # name = r'C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/splines_Tb_sky/spline_' /
             # + '%.1f' % (filters[i]/1e9) +'GHz.npy'
-            # name = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_Tb_sky\spline_' \
+            # name = r'C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/splines_Tb_sky/spline_' /
             # + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
-            name = r'C:\Users\sup-ehuijten\Documents\DESHIMA-model_18_12_19\Python\BEP\Data\splines_Tb_sky\spline_' \
+            name = r'C:/Users/sup-ehuijten/Documents/DESHIMA-model_18_12_19/Python/BEP/Data/splines_Tb_sky/spline_' \
              + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
             f_load = np.load(name, allow_pickle= True)
             f_function = f_load.item()
@@ -219,5 +227,6 @@ prefix_atm_data = 'sample00.dat-'
 grid = 0.2
 beam_radius = 5. #m
 signal_transmitter_1 = signal_transmitter(220e9, 440e9, 1500, 275, 380, 500, 2, 350)
+signal_transmitter_1.save_filtered_pwv_map(prefix_atm_data, grid, beam_radius)
 # print(signal_transmitter.transmit_signal_DESIM_multf2(signal_transmitter_1, windspeed, filename_atm_data, beam_radius))
-signal_transmitter_1.draw_signal(1, 1, 1, [250], windspeed, prefix_atm_data, grid, beam_radius)
+# signal_transmitter_1.draw_signal(1, 1, 1, [250], windspeed, prefix_atm_data, grid, beam_radius)

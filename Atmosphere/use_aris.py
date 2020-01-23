@@ -37,7 +37,7 @@ class use_ARIS(object):
     def initialize_pwv_matrix(self, time):
         max_distance = (time*self.windspeed + 2*self.separation)
         max_x_index = math.ceil(max_distance/self.grid)
-        num_strips = math.ceil(max_x_index/self.x_length_strip)
+        num_strips = min(math.ceil(max_x_index/self.x_length_strip), 40)
         print('num_strips', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
@@ -56,7 +56,6 @@ class use_ARIS(object):
         print('shape EPL matrix', self.dEPL_matrix.shape)
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
         self.pwv_matrix = np.array(self.pwv_matrix)
-        # self.filtered_pwv_matrix = self.tt_instance.filter_with_Gaussian(self.pwv_matrix, self.beam_radius)
 
     def obt_pwv(self, time, count, f_chop, windspeed):
         pwv_matrix = self.filtered_pwv_matrix

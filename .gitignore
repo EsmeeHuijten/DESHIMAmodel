@@ -1,3 +1,6 @@
 /Data/output_ARIS/*
 /Data/ATMOSPHERE_STRIPS.zip
 /Data/output_ARIS-20200121.zip
+__pycache__
+*.zip
+Atmosphere_model_Kah_Wuy/
