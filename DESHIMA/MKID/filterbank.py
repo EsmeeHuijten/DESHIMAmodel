@@ -20,6 +20,7 @@ rc('text', usetex=True)
 
 import numpy as np
 
+import os
 import sys
 sys.path.insert(1, '../')
 import use_desim
@@ -59,6 +60,7 @@ class filterbank(object):
         self.R = R
         self.FWHM = self.F/R
         self.num_filters = num_filters
+        self.path_model = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
     def calcLorentzian(self, x_array):
         """Calculates values of a Lorentzian curve.
@@ -165,10 +167,12 @@ class filterbank(object):
         self.bar = Bar('Progress', max=(2 * self.num_filters + 1000), suffix='%(percent)d%%') #1000 bins for Lorentzian curve
         for i in range(0, len(pwv_vector)):
             Pkid, Tb_sky = self.getPoints_TP_curve(EL_vector, pwv_vector[i], self.bar)
-            filename_Pkid = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Pkid/Pkid_for_pwv_" \
-            + str(pwv_vector[i]) + ".txt"
-            filename_Tb_sky = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Tb_sky/Tb_sky_for_pwv_" \
-            + str(pwv_vector[i]) + ".txt"
+            # filename_Pkid = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Pkid/Pkid_for_pwv_" \
+            # + str(pwv_vector[i]) + ".txt"
+            # filename_Tb_sky = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Tb_sky/Tb_sky_for_pwv_" \
+            # + str(pwv_vector[i]) + ".txt"
+            filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '.txt'
+            filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + ".txt"
             np.savetxt(filename_Pkid, Pkid)
             np.savetxt(filename_Tb_sky, Tb_sky)
             Pkid = 0; Tb_sky = 0
@@ -181,9 +185,11 @@ class filterbank(object):
         eta_atm = np.zeros([len(pwv_vector), len(self.F)]) #num_filters can also be another (larger) numbers
         for k in range(0, len(pwv_vector)):
             eta_atm[k, :] = self.getPoints_etaF_curve(pwv_vector[k], EL)
-        filename_eta_atm = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/eta_atm/eta_atm.txt"
+        # filename_eta_atm = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/eta_atm/eta_atm.txt"
+        # filename_F= "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/F/F.txt"
+        filename_eta_atm = self.path_model + 'Data/eta_atm/eta_atm.txt'
+        filename_F = self.path_model + '/Data/F/F.txt'
         np.savetxt(filename_eta_atm, eta_atm)
-        filename_F= "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/F/F.txt"
         np.savetxt(filename_F, self.F)
 
     def load_TP_data(self, pwv_vector, EL_vector):
@@ -194,18 +200,24 @@ class filterbank(object):
         Pkid = np.zeros([len(pwv_vector), len(self.F), length_EL_vector])
         Tb_sky = np.zeros([len(pwv_vector), len(self.F), length_EL_vector])
         for i in range(0, len(pwv_vector)):
-            Pkid[i, :, :] = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Pkid/Pkid_for_pwv_" \
-            + str(pwv_vector[i]) + ".txt")
-            Tb_sky[i, :, :] = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Tb_sky/Tb_sky_for_pwv_" \
-            + str(pwv_vector[i]) + ".txt")
+            filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '.txt'
+            filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + ".txt"
+            Pkid[i, :, :] = np.loadtxt(filename_Pkid)
+            Tb_sky[i, :, :] = np.loadtxt(filename_Tb_sky)
+            # Pkid[i, :, :] = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Pkid/Pkid_for_pwv_" \
+            # + str(pwv_vector[i]) + ".txt")
+            # Tb_sky[i, :, :] = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Tb_sky/Tb_sky_for_pwv_" \
+            # + str(pwv_vector[i]) + ".txt")
         return Tb_sky, Pkid
 
     def load_etaF_data(self):
         """
         Saves values of the atmospheric transmission eta_atm, that are obtained by the 'save_etaF_data' method.
         """
-        eta_atm = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/eta_atm/eta_atm.txt")
-        F = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/F/F.txt")
+        filename_eta_atm = self.path_model + 'Data/eta_atm/eta_atm.txt'
+        filename_F = self.path_model + '/Data/F/F.txt'
+        eta_atm = np.loadtxt(filename_eta_atm)
+        F = np.loadtxt(filename_F)
         return eta_atm, F
 
     def make_animation(self, pwv_vector, EL_vector):
@@ -274,10 +286,8 @@ class filterbank(object):
             # knots = 2
             # f_pwv = interpolate.LSQBivariateSpline(Pkid_vector, EL_vector_long, \
             # pwv_vector_long, tx = np.linspace(0, 1e-12, knots), ty = np.linspace(20., 90., knots), kx = 1, ky = 1)
-            name = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_Tb_sky\spline_' \
-            + '%.1f' % (F[j]/1e9) +'GHz'
-            name_pwv = r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_pwv\spline_' \
-            + '%.1f' % (F[j]/1e9) +'GHz'
+            name = self.path_model + '\Data\splines_Tb_sky\spline_' + '%.1f' % (F[j]/1e9) +'GHz'
+            name_pwv = self.path_model + '\Data\splines_pwv\spline_' + '%.1f' % (F[j]/1e9) +'GHz'
             np.save(name, np.array(f))
             np.save(name_pwv, np.array(f_pwv))
         return peak_indices
@@ -286,7 +296,7 @@ class filterbank(object):
         pwv_vector = np.array([])
         for i in range(0, 200):
             # print('%.1f' % (self.F[i]/1e9))
-            f_load = np.load(r'C:\Users\Esmee\Documents\BEP\DESHIMA\Python\BEP\Data\splines_pwv\spline_' \
+            f_load = np.load(self.path_model + '\Data\splines_pwv\spline_' \
             + '%.1f' % (self.F[i]/1e9) +'GHz.npy')
             f_function = f_load.item()
             pwv = f_function(Pkid, EL)
@@ -295,6 +305,11 @@ class filterbank(object):
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Precipitable water vapor (mm)')
         plt.show()
+
+
+##------------------------------------------------------------------------------
+## Code that might be useful later
+##------------------------------------------------------------------------------
 
 # num_filters = 350
 # length_EL_vector = 25
@@ -311,9 +326,6 @@ class filterbank(object):
 # filterbank_1.make_animation(pwv_vector, EL_vector)
 # filterbank_1.check_pwv(60., 0.6e-12)
 
-
-# Code that might be useful later
-
 # plot dips in atmospheric transmission curve
 # plt.plot(F/1e9, eta_atm[0], c='dodgerblue')
 # plt.scatter(F[peak_indices]/1e9, eta_atm[0, peak_indices], c=np.linspace(-2*np.pi, 2*np.pi, len(peak_indices)), marker='.')
@@ -321,55 +333,3 @@ class filterbank(object):
 # plt.xlabel('Frequency (GHz)')
 # plt.ylabel('$\eta$')
 # plt.show()
-
-# make different windows with a lot of subplots
-# def make_subplots(self, pwv_vector, EL_vector):
-#     length_EL_vector = len(EL_vector)
-#     Pkid_1, Tb_sky_1 = self.getPoints_TP_curve(length_EL_vector, pwv_vector[0])
-#     Pkid_2, Tb_sky_2 = self.getPoints_TP_curve(length_EL_vector, pwv_vector[1])
-#     Pkid_3, Tb_sky_3 = self.getPoints_TP_curve(length_EL_vector, pwv_vector[2])
-#     Pkid_4, Tb_sky_4 = self.getPoints_TP_curve(length_EL_vector, pwv_vector[3])
-#     plt.figure()
-#     F_vector = self.F/1e9
-#     j = 40
-#     for i in range(0, self.num_filters):
-#         plt.subplot(5, 10, (i%50)+1) #this is not working
-#         # plt.legend(['0.1 mm','0.5 mm', '1.0 mm', '2.0 mm'])
-#         plt.plot(Pkid_1[i, :]*1e12, Tb_sky_1[i, :])
-#         plt.plot(Pkid_2[i, :]*1e12, Tb_sky_2[i, :])
-#         plt.plot(Pkid_3[i, :]*1e12, Tb_sky_3[i, :])
-#         plt.plot(Pkid_4[i, :]*1e12, Tb_sky_4[i, :])
-#         # ax.set_tick_params(direction='in', which='both')
-#         #formatting
-#         xlim = 3
-#         plt.xlim([0, xlim])
-#         plt.ylim([0, 300])
-#         # ax.tick_params(direction='in',which='both')
-#         plt.text(xlim/4, 250, "%.0f" % F_vector[i], size=10,
-#              ha="center", va="center",
-#              bbox=dict(boxstyle="round",
-#                        ec=(1., 0.5, 0.5),
-#                        fc=(1., 0.8, 0.8),
-#                        )
-#              )
-#         if i % 50 == 0 and i != 0:
-#             plt.figure()
-#             j += 50
-#         if i % 10 != 0:
-#             plt.yticks([])
-#         if i < j:
-#             plt.tick_params(
-#         axis='x',          # changes apply to the x-axis
-#         which='both',      # both major and minor ticks are affected
-#         bottom=False,      # ticks along the bottom edge are off
-#         top=False,         # ticks along the top edge are off
-#         labelbottom=False)
-#         # plt.xlabel('Pkid (W)')
-#         # plt.ylabel('Tb_sky (K)')
-#         # plt.title('Filter ' + str(i + 1) + 'F = ' + str(F_vector[i]) + ' GHz')
-#         # plt.gca().legend(('0.1 mm','0.5 mm', '1.0 mm', '2.0 mm'))
-#         # plt.tight_layout()
-#     plt.show()
-#     elapsed = time.time() - t
-#     print('elapsed time', elapsed)
-#     # filterbank_1.drawLorentzian(10e9)

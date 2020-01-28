@@ -2,17 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.special
 # plt.style.use('dark_background')
-#     import pyximport; pyximport.install()
-#     import timeSigBoost
 
 import sys
 sys.path.append('./DESHIMA/MKID/')
+# for cython
 # import pyximport; pyximport.install()
 # import timeSigBoost
 
 class photon_noise(object):
     """
-    Can calculate different expressions of the NEP. It can draw a Poisson distribution
+    Can calculate different expressions of the NEP. It can draw a Poisson distribution.
+    This class can also calculate a noisy time signal using a Gaussian estimate of the
+    Poisson distribution with the NEP included in the standard deviation.
 
     Properties
     ------------
@@ -31,23 +32,23 @@ class photon_noise(object):
     """
 
     h = 6.62607004e-34
-    sampling_rate = 160
     delta_Al = 188e-6 * 1.602e-19
     eta = 0.4
 
-    def __init__(self, power, frequency, spec_res = 500):
+    def __init__(self, power, frequency, sampling_rate, spec_res):
         self.power = power
         self.frequency = frequency
         self.spec_res = spec_res
         self.delta_F = self.frequency/spec_res
+        self.sampling_rate = sampling_rate
 
     def calcNEPsimple(self):
-        """Calculates the simple NEP, with only the first term of the of the
-        'First light' paper (DOI: 10.1038/s41550-019-0850-8)
+        """Calculates the simple NEP, with only the first term of the expression
+        mentioned in  the 'First light' paper (DOI: 10.1038/s41550-019-0850-8)
 
         Returns
         ------------
-        NEP_s: scalar
+        NEP_s: scalar or array
             Simple NEP
             Unit: W/Hz
         """
@@ -60,7 +61,7 @@ class photon_noise(object):
 
         Returns
         ------------
-        NEP_b: scalar
+        NEP_b: scalar or array
             Complete (or 'boosted') NEP
             Unit: W/Hz
         """
@@ -72,7 +73,7 @@ class photon_noise(object):
         """Calculates and plots a Poisson distribution, where the parameter of
         this distribution is given by lambda = power/(h*frequency*sampling_rate)
         """
-        lambda_ = self.power/(photon_noise.h*self.frequency*photon_noise.sampling_rate)
+        lambda_ = self.power/(photon_noise.h*self.frequency*self.sampling_rate)
         lambda_calc = lambda_ *10**-6
         x = np.linspace(0, 2*lambda_calc, 30)
         y = (lambda_calc**x) \
@@ -105,11 +106,11 @@ class photon_noise(object):
         y_plot: vector
             Power vector with numbers drawn from the Poisson distribution
         """
-        lambda_ = self.power/(photon_noise.h*self.frequency*photon_noise.sampling_rate)
-        N = int(photon_noise.sampling_rate * time)
+        lambda_ = self.power/(photon_noise.h*self.frequency*self.sampling_rate)
+        N = int(self.sampling_rate * time)
         x = np.linspace(0, time, N)
         y = np.random.poisson(lambda_, N)
-        y_plot = y*(photon_noise.h*self.frequency)*photon_noise.sampling_rate
+        y_plot = y*(photon_noise.h*self.frequency)*self.sampling_rate
 
         # Calculate the standard deviation of the signal, averaged every 0.5 seconds
         i = 0
@@ -119,8 +120,6 @@ class photon_noise(object):
             y_means[i] = np.mean(y_plot[j:j+int(0.5*self.sampling_rate-1)])
             j += int(0.5*self.sampling_rate)
             i += 1
-        # print('Standard deviation of the signal is', np.sqrt(np.var(y_means)))
-
         return [x, y_plot]
 
     def calcTimeSignalBoosted(self, time = 1, atm = 0):
@@ -142,25 +141,18 @@ class photon_noise(object):
         y_plot: vector
             Power vector with numbers drawn from the Poisson distribution
         """
-        # Make a mock-up time signal of the photon noise using the boosted NEP, by
-        # drawing samples from the normal distribution
         #with cython
         # return timeSigBoost.calcTimeSigBoost(self.power, self.frequency, self.delta_F, self.sampling_rate, atm)
 
         # without cython
         std_dev = self.calcNEPboosted() * np.sqrt(0.5*self.sampling_rate)
         if atm:
-            # delta_y = np.zeros(self.power.shape)
-            # num_filters = self.power.shape[0]
             delta_y = np.random.normal(0, std_dev, std_dev.shape)
-            # print('delta_y', delta_y.shape)
-            # for i in range(0, num_filters):
-                # delta_y[i, :] = np.random.normal(0, std_dev[i, :], len(std_dev[i, :]))
             y = self.power + delta_y
             return y
         else:
             mean = self.power
-            N = int(photon_noise.sampling_rate * time)
+            N = int(self.sampling_rate * time)
             x = np.linspace(0, time, N)
             y_plot = np.random.normal(mean, std_dev, N)
 

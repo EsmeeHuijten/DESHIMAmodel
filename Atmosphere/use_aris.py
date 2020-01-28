@@ -12,8 +12,8 @@ from matplotlib.ticker import (
 import sys
 sys.path.insert(1, '../../')
 sys.path.insert(1, '../')
-from Atmosphere_model_Kah_Wuy.aris import load_aris_output
-import Telescope.telescope_transmission as tt
+# from Atmosphere_model_Kah_Wuy.aris import load_aris_output
+# import Telescope.telescope_transmission as tt
 
 class use_ARIS(object):
 
@@ -22,17 +22,24 @@ class use_ARIS(object):
     separation = 2*0.5663 #m (116.8 arcseconds)
     x_length_strip = 32768
 
-    def __init__(self, prefix_filename, grid, windspeed, time):
+    def __init__(self, prefix_filename, grid, windspeed, time, loadCompletePwvMap = 0):
         self.prefix_filename = prefix_filename
         self.grid = grid
         self.windspeed = windspeed
+        self.path_model = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if __name__ == "__main__":
             self.pathname = "../Data/output_ARIS/"
         else:
-            # cwd = os.getcwd()
-            self.pathname ="C:/Users/sup-ehuijten/Documents/GitHub/DESHIMAmodel/Data/output_ARIS/"
+            self.pathname = self.path_model + '/Data/output_ARIS/'
         self.filtered_pwv_matrix = "None"
-        self.initialize_pwv_matrix(time)
+        if loadCompletePwvMap:
+            self.load_complete_pwv_map()
+        else:
+            self.initialize_pwv_matrix(time)
+
+    def load_complete_pwv_map(self):
+        path = self.path_model + '/Data/output_ARIS/complete_filtered_pwv_map.txt'
+        self.filtered_pwv_matrix = np.loadtxt(path)
 
     def initialize_pwv_matrix(self, time):
         max_distance = (time*self.windspeed + 2*self.separation)
@@ -57,7 +64,7 @@ class use_ARIS(object):
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
         self.pwv_matrix = np.array(self.pwv_matrix)
 
-    def obt_pwv(self, time, count, f_chop, windspeed):
+    def obt_pwv(self, time, count, windspeed):
         pwv_matrix = self.filtered_pwv_matrix
         length_x = pwv_matrix.shape[0]
         positions = self.calc_coordinates(time, windspeed)
