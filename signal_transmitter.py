@@ -228,30 +228,3 @@ class signal_transmitter(object):
         plt.xlabel('Time (s)')
         plt.ylabel('Power (W)')
         plt.show()
-
-# order of the arguments: F_min, F_max, num_bins, T, spec_res, R, time, num_filters, F0
-obs_time = 0.03125 #s
-windspeed = 10 #m/s
-prefix_atm_data = 'sample00.dat-'
-grid = 0.2 #m
-save_name_plot = 'tryout.png'
-input_dictionary = {
-    'F_min': 220e9,
-    'F_max': 440e9,
-    'num_bins': 1500,
-    'T': 275,
-    'spec_res': 500,
-    'R': 500,
-    'time': obs_time,
-    'num_filters': 350,
-    'windspeed': windspeed,
-    'prefix_atm_data': prefix_atm_data,
-    'grid': grid,
-    'beam_radius': 5.,
-    'useDESIM': 1,
-    'inclAtmosphere': 1
-}
-
-signal_transmitter_1 = signal_transmitter(input_dictionary)
-# signal_transmitter_1.save_filtered_pwv_map()
-signal_transmitter_1.draw_signal(save_name_plot, [250])

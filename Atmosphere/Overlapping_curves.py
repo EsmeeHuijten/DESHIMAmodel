@@ -1,9 +1,10 @@
+import numpy as np
 import math
-from matplotlib import rc
-rc('text', usetex=True)
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 16})
-import numpy as np
+from matplotlib import rc
+rc('text', usetex=True)
+
 import sys
 sys.path.insert(1, 'C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/DESHIMA')
 import calc_psd_KID as psd_KID

@@ -2,7 +2,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rc
-
 # plt.style.use('dark_background')
 
 class bb_source(object):
@@ -24,17 +23,20 @@ class bb_source(object):
         Unit: K
     spec_res: scalar
         Spectral resolution of the DESHIMA instrument. This is generally
-        F/(Delta_F) ~ 380 for DESHIMA1.0.
+        F/(Delta_F) ~ 380 for DESHIMA and F/(Delta_F) ~ 500 for DESHIMA 2.0
         Unit: Hz
     num_bins: integer
         Number of bins used in the approximation of the Johnson-Nyquist curve.
     bin_centres: vector
-        Centres of the bins used in the approximation of the Johnson-Nyquist curve.
-        Equally spaced between F_min and F_max
+        Centres of the bins used in the approximation of the Johnson-Nyquist curve,
+        equally spaced between F_min and F_max.
+        Unit: Hz
     bin_sides: vector
         Sides of the bins used in the approximation of the Johnson-Nyquist curve.
+        Unit: Hz
     bin_width: scalar
         Width of the bins used in the approximation fo the Johnson-Nyquist curve.
+        Unit: Hz
     """
 
     h = 6.62607004e-34
@@ -70,7 +72,9 @@ class bb_source(object):
         Returns
         ------------
         [bin_centres, P_bin_centres]
-
+        bin_centres: vector
+            Vector containing the frequencies for which the power has been calculated
+            Unit: Hz
         P_bin_centres: vector
             Power corresponding to the frequency in bin_centres, calculated with
             the Johnson-Nyquist radiation formula
@@ -87,21 +91,9 @@ class bb_source(object):
         x = bb_source.h * self.approx_JN_curve()[0] / (bb_source.k * self.T)
         y = self.approx_JN_curve()[1]
         fig, ax = plt.subplots()
-        # x = np.linspace(1, 10, 500)
-        # y = np.linspace(1, 10, 500)
         plt.loglog(x, y)
         plt.xlabel('$log(hf/kT)$')
         plt.ylabel('$log(P)$ in $10^{-12} \cdot log(W)$')
         plt.yticks(y[0:self.num_bins:30], ["%.3f" % z for z in y[0:self.num_bins:30]*10**12])
         ax = plt.gca()
         plt.show()
-
-
-# DEMO
-
-# blackbody_1 = bb_source(100e9, 500e9, 500, 280, 380)
-# blackbody_1.plot_JN_curve()
-
-# blackbody_2 = bb_source(300e9, 350e9, 500, 280, 380)
-# blackbody_2.drawTimeSignal_Fdep(2)
-# plt.show()
