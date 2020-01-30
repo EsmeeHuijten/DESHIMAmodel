@@ -28,7 +28,7 @@ import DESHIMA.MKID.photon_noise as pn
 import Source.bb_source as bbs
 
 class signal_transmitter(object):
-    "Class that transmits the signal through the telescope"
+    "Class that transmits the signal through all components of the model"
 
     sampling_rate = 160
 
@@ -59,6 +59,14 @@ class signal_transmitter(object):
         self.F_max = self.filters[-1]
 
     def transmit_signal_simple(self):
+        """
+        OUTDATED - Transmits the signal through the most simple version of the
+        DESHIMA model, using a blackbody source instead of the atmosphere and
+        the galaxy. The DESHIMA instrument sensitivity is not included in this
+        estimation and only one filter is simulated. It approximates the filter
+        response with a Gaussian and adds photon noise using a Gaussian
+        estimation of the Poisson distribution.
+        """
         bb_source = bbs.bb_source(self.F_min, self.F_max, self.num_bins, self.T, self.spec_res)
         [self.bin_centres, self.P_bin_centres] = bb_source.approx_JN_curve()
         filterbank = fb.filterbank(self.F0, self.spec_res)
@@ -73,12 +81,18 @@ class signal_transmitter(object):
             noise_signal.delta_F = bb_source.bin_width
             signal_matrix[i, :] = noise_signal.calcTimeSignalBoosted(self.time)[1]
             if i == 0:
-                x = noise_signal.calcTimeSignalBoosted(self.time)[0]
-        y = np.sum(signal_matrix, axis=0)
-        return [x, y]
+                frequency_vector = noise_signal.calcTimeSignalBoosted(self.time)[0]
+        power_vector = np.sum(signal_matrix, axis=0)
+        return [frequency_vector, power_vector]
 
     def transmit_signal_DESIM(self): #is not working atm
-        """Makes mock-up time signal for 1 filter with 1 Lorentzian"""
+        """
+        OUTDATED - Transmits the signal through the DESHIMA model. The galaxy
+        data and atmosphere are not included in this version of the model and
+        only one filter is simulated. It approximates the filter response with a
+        Gaussian and adds photon noise using a Gaussian estimation of the
+        Poisson distribution.
+        """
         self.bin_centres, self.psd_bin_centres = use_desim.getpsd_KID()
         self.P_bin_centres = self.psd_bin_centres * (self.bin_centres[1]-self.bin_centres[0])
         print(self.bin_centres, self.P_bin_centres)
@@ -98,6 +112,13 @@ class signal_transmitter(object):
         return [x, y]
 
     def transmit_signal_DESIM_multf(self):
+        """
+        OUTDATED - Transmits the signal through the DESHIMA model. The galaxy
+        data and atmosphere are not included in this version of the model, but
+        multiple filteres are simulated. It approximates the filter response with a
+        Gaussian and adds photon noise using a Gaussian estimation of the
+        Poisson distribution.
+        """
         # Obtain data from DESIM
         [self.bin_centres, self.psd_bin_centres, filters] = use_desim.transmit_through_DESHIMA(self.F_min, self.F_max, \
         self.num_bins, self.num_filters, self.spec_res)[1:4] #vector, frequency
@@ -125,16 +146,51 @@ class signal_transmitter(object):
         return [time_vector, power_matrix, filters] #x is the time, summed_signal_matrix is the power (stochastic signal)
 
     def save_filtered_pwv_map(self):
-        # windspeed = 1320000.0/self.time
-        windspeed = 10
+        """
+        This function loads in all atmosphere strips, takes the part of them
+        that is needed for the simulation, glues them together and filters them
+        with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
+        directory with name filename.
+        """
+        windspeed = 1320000.0/self.time
         aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         path = os.path.dirname(os.path.abspath(__file__))
-        filename = '/Data/output_ARIS/remove_me.txt'
-        np.savetxt(path + filename, aris_instance.filtered_pwv_matrix)
+        relpath = '/Data/output_ARIS/'
+        filename = 'remove_me.txt'
+        np.savetxt(path + relpath + filename, aris_instance.filtered_pwv_matrix)
 
     def transmit_signal_DESIM_multf_atm(self):
+        """
+        This function transmits the signal through the final version of the
+        DESHIMA model. It starts with calculating the number of samples needed
+        and making a time vector. Then the atmosphere map from ARIS is loaded in
+        and filtered. It then loads the galaxy spectrum and converts this to a
+        psd. Finally, it gives all the needed information to the processInput
+        function that calculates the signal with parallel computing.
+
+        Returns
+        ------------
+        time_vector: vector
+            The times at which the signal needs to be calculated
+            Unit: s
+        power_matrix_res: array
+            Values of the power of the signal. This matrix has shape
+            [5 (number of different pwv values), number of filters, number of time samples]
+            Unit: W
+        T_sky_matrix: array
+            Values of the sky temperature of the signal. This matrix has shape
+            [5 (number of different pwv values), number of filters, number of time samples]
+            Unit: K
+        self.filters: vector
+            Center frequencies of the filters in the filterbank in the MKID chip
+            Unit: Hz
+        start: float
+            The moment at which the calculations started, to be able to show the
+            elapsed time after running the program.
+            Unit: s
+        """
         self.num_samples = int(self.time*self.sampling_rate)
         time_vector = np.linspace(0, self.time, self.num_samples)
 
@@ -170,6 +226,19 @@ class signal_transmitter(object):
         return [time_vector, power_matrix_res, T_sky_matrix, self.filters, start] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
 
     def processInput(i, self, aris_instance, use_desim_instance, time_step, count):
+        """
+        This function gets the right values of the pwv and then transmits the signal
+        through Desim (DESHIMA simulator). The psd that is obtained from Desim is
+        integrated to obtain the power and finally, photon noise is added using
+        a Gaussian estimation of the Poisson distribution.
+
+        Returns
+        ------------
+        power_matrix_column: array
+            Values of the power of the signal for one time sample. This matrix has shape
+            [5 (number of different pwv values), number of filters]
+            Unit: W
+        """
         pwv_value = aris_instance.obt_pwv(time_step, count, self.windspeed)
         [self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_value)[1:4]
 
@@ -182,6 +251,18 @@ class signal_transmitter(object):
         return power_matrix_column
 
     def convert_P_to_Tsky(self, power_matrix, filters):
+        """
+        This function converts an array with power values to an array with sky
+        temperature values, using the saved interpolation function from the
+        '.Data/splines_Tb_sky/' repository.
+
+        Returns
+        ------------
+        T_sky_matrix: array
+            Values of the sky temperature that correspons to the values of the
+            power that were passed to the function
+            Unit: K
+        """
         T_sky_matrix = np.zeros(power_matrix.shape)
         for i in range(0, self.num_filters):
             path = os.path.dirname(os.path.abspath(__file__))
@@ -189,10 +270,18 @@ class signal_transmitter(object):
             f_load = np.load(path + filename, allow_pickle= True)
             f_function = f_load.item()
             for j in range(0, power_matrix.shape[1]):
-                T_sky_matrix[i, j] = f_function(90., power_matrix[i, j])
+                T_sky_matrix[i, j] = f_function(self.EL, power_matrix[i, j])
         return T_sky_matrix
 
     def draw_signal(self, save_name_plot, plot_filters = [1]):
+        """
+        This function makes sure the signal is calculated for each filter and
+        plots the signal for the filters given in plot_filters. It then saves
+        plot in the same folder as this file with the name save_name_plot.
+
+        The part of the signal that is plotted is the middle left position of
+        the pwv values.
+        """
         plt.figure()
         if self.useDESIM:
             if self.num_filters > 1:

@@ -10,6 +10,11 @@ sys.path.append('./GalaxySpectrum/')
 import GalaxySpectrum.spectrumCreate as galaxy
 
 def calcMaxObsTime(windspeed):
+    """
+    Calculates the maximum observing time, using the number of gridpoints in
+    one atmosphere strip, the gridwidth, the number of atmosphere strips and the
+    windspeed
+    """
     # maximum time
     # every strip has 32768 x-values
     max_obs_time = 32768.0*max_num_strips*grid/windspeed
@@ -29,8 +34,7 @@ linewidth = 300
 # Observation
 EL = 60.
 max_obs_time = calcMaxObsTime(windspeed)
-# obs_time = 0.03125 #s
-obs_time = 1e14
+obs_time = 0.03125 #s
 if obs_time > max_obs_time:
     raise ValueError('obs_time must be smaller than max_obs_time: ', max_obs_time)
 draw_filters = [250]
@@ -60,7 +64,9 @@ signal_transmitter_1 = st.signal_transmitter(input_dictionary)
 # signal_transmitter_1.save_filtered_pwv_map()
 signal_transmitter_1.draw_signal(save_name_plot, draw_filters)
 
-
+##------------------------------------------------------------------------------
+## Code that might be useful later
+##------------------------------------------------------------------------------
 
 # Galaxy test
 # frequency,spectrum=galaxy.giveSpectrumInclSLs(12,2)
