@@ -263,7 +263,8 @@ def spectrometer_sensitivity(
 
     # Ohmic loss as a function of frequency, from skin effect scaling
     eta_Al_ohmic = (1.-(1.-eta_Al_ohmic_850)*np.sqrt(F/850.e9))
-    eta_Al_ohmic = eta_Al_ohmic.reshape([eta_Al_ohmic.shape[0], 1])
+    if type(eta_Al_ohmic) != np.float64:
+        eta_Al_ohmic = eta_Al_ohmic.reshape([eta_Al_ohmic.shape[0], 1])
     eta_M1_ohmic = eta_Al_ohmic
     eta_M2_ohmic = eta_Al_ohmic
 
@@ -276,15 +277,20 @@ def spectrometer_sensitivity(
     eta_atm = eta_atm_func(F=F, pwv=pwv, EL=EL, R=R, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith)
     # Johnson-Nyquist Power Spectral Density (W/Hz) for the physical temperatures of each stage
     psd_jn_cmb_and_gal   = johnson_nyquist_psd(F=F, T=Tb_cmb) + psd_gal
-    psd_jn_cmb_and_gal = psd_jn_cmb_and_gal.reshape([psd_jn_cmb_and_gal.shape[0], 1])
+    if type(psd_jn_cmb_and_gal) != np.float64:
+        psd_jn_cmb_and_gal = psd_jn_cmb_and_gal.reshape([psd_jn_cmb_and_gal.shape[0], 1])
     psd_jn_amb   = johnson_nyquist_psd(F=F, T=Tp_amb)
-    psd_jn_amb = psd_jn_amb.reshape([psd_jn_amb.shape[0], 1])
+    if type(psd_jn_amb) != np.float64:
+        psd_jn_amb = psd_jn_amb.reshape([psd_jn_amb.shape[0], 1])
     psd_jn_cabin = johnson_nyquist_psd(F=F, T=Tp_cabin)
-    psd_jn_cabin = psd_jn_cabin.reshape([psd_jn_cabin.shape[0], 1])
+    if type(psd_jn_cabin) != np.float64:
+        psd_jn_cabin = psd_jn_cabin.reshape([psd_jn_cabin.shape[0], 1])
     psd_jn_co    = johnson_nyquist_psd(F=F, T=Tp_co)
-    psd_jn_co = psd_jn_co.reshape([psd_jn_co.shape[0], 1])
+    if type(psd_jn_co) != np.float64:
+        psd_jn_co = psd_jn_co.reshape([psd_jn_co.shape[0], 1])
     psd_jn_chip  = johnson_nyquist_psd(F=F, T=Tp_chip)
-    psd_jn_chip = psd_jn_chip.reshape([psd_jn_chip.shape[0], 1])
+    if type(psd_jn_chip) != np.float64:
+        psd_jn_chip = psd_jn_chip.reshape([psd_jn_chip.shape[0], 1])
     # Optical Chain
     # Sequentially calculate the Power Spectral Density (W/Hz) at each stage.
     # Uses only basic radiation transfer: rad_out = eta*rad_in + (1-eta)*medium
@@ -303,10 +309,12 @@ def spectrometer_sensitivity(
     # # Loadig power absorbed by the KID
     # # .............................................
     W_F_cont = F/500/eta_IBF # hardcoded with R = 500
-    W_F_cont = W_F_cont.reshape([W_F_cont.shape[0], 1])
+    if type(W_F_cont) != np.float64:
+        W_F_cont = W_F_cont.reshape([W_F_cont.shape[0], 1])
     # print('psd_KID', psd_KID.shape)
     # print('W_F_cont', W_F_cont.shape)
     Pkid = psd_KID * W_F_cont
+    Tb_sky = T_from_psd(F, psd_sky)
 
     # ############################################
     # 3. Output results as dictionary
@@ -317,7 +325,8 @@ def spectrometer_sensitivity(
         'eta_atm': eta_atm,
         'psd_co': psd_co,
         'psd_jn_chip': psd_jn_chip,
-        'psd_KID': psd_KID
+        'psd_KID': psd_KID,
+        'Tb_sky': Tb_sky
     }
     # Turn Scalar values into vectors
     # result = result.fillna(method='ffill')
@@ -519,7 +528,8 @@ def window_trans(
 
     eta_HDPE = np.exp(-thickness * 2 * np.pi * neffHDPE *
                       (tandelta * F / c + tan2delta * (F / c)**2))
-    eta_HDPE = eta_HDPE.reshape([eta_HDPE.shape[0], 1])
+    if type(eta_HDPE) != np.float64:
+        eta_HDPE = eta_HDPE.reshape([eta_HDPE.shape[0], 1])
     # most of the reflected power sees the cold.
     psd_after_1st_refl = rad_trans(psd_in, psd_co, 1.-HDPErefl)
     psd_before_2nd_refl = rad_trans(psd_after_1st_refl, psd_cabin, eta_HDPE)
@@ -606,6 +616,8 @@ def T_from_psd(
         Units : K
 
     """
+    if type(F) != np.float64:
+        F = F.reshape([F.shape[0], 1])
     if method == 'Planck':
         T = h*F/(k*np.log(h*F/psd+1.))
     elif method is 'Rayleigh-Jeans':

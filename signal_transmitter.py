@@ -35,12 +35,10 @@ class signal_transmitter(object):
     def __init__(self, input):
         self.input = input
         self.F_min = input['F_min']
-        self.F_max = input['F_max']
         self.num_bins = input['num_bins']
         self.T = input['T']
         self.spec_res = input['spec_res']
         self.F0 = input['F_min']
-        self.R = input['R']
         self.time = input['time']
         self.num_filters = input['num_filters']
         self.windspeed = input['windspeed']
@@ -49,14 +47,24 @@ class signal_transmitter(object):
         self.beam_radius = input['beam_radius']
         self.useDESIM = input['useDESIM']
         self.inclAtmosphere = input['inclAtmosphere']
+        self.luminosity = input['luminosity']
+        self.redshift = input['redshift']
+        self.linewidth = input['linewidth']
+        self.EL = input['EL']
+        self.max_num_strips = input['max_num_strips']
+
+        self.filters = np.zeros(self.num_filters)
+        for i in range(self.num_filters):
+            self.filters[i] = self.F_min * (1 + 1/self.spec_res)**i
+        self.F_max = self.filters[-1]
 
     def transmit_signal_simple(self):
         bb_source = bbs.bb_source(self.F_min, self.F_max, self.num_bins, self.T, self.spec_res)
         [self.bin_centres, self.P_bin_centres] = bb_source.approx_JN_curve()
-        filterbank = fb.filterbank(self.F0, self.R)
+        filterbank = fb.filterbank(self.F0, self.spec_res)
         self.filter_response = filterbank.calcLorentzian(self.bin_centres)
 
-        self.P_bin_centres = self.P_bin_centres * self.filter_response * math.pi * self.F0 / (2 * self.R)
+        self.P_bin_centres = self.P_bin_centres * self.filter_response * math.pi * self.F0 / (2 * self.spec_res)
         # self.P_total = sum(self.P_bin_centres) * bb_source.bin_width
         # print(self.P_total)
         signal_matrix = np.zeros([self.num_bins, int(self.time*self.sampling_rate)])
@@ -92,7 +100,7 @@ class signal_transmitter(object):
     def transmit_signal_DESIM_multf(self):
         # Obtain data from DESIM
         [self.bin_centres, self.psd_bin_centres, filters] = use_desim.transmit_through_DESHIMA(self.F_min, self.F_max, \
-        self.num_bins, self.num_filters, self.R)[1:4] #vector, frequency
+        self.num_bins, self.num_filters, self.spec_res)[1:4] #vector, frequency
 
         # Calculate the power from psd_KID
         self.P_bin_centres = self.psd_bin_centres * (self.bin_centres[1]-self.bin_centres[0]) #matrix, power
@@ -129,15 +137,12 @@ class signal_transmitter(object):
     def transmit_signal_DESIM_multf_atm(self):
         self.num_samples = int(self.time*self.sampling_rate)
         time_vector = np.linspace(0, self.time, self.num_samples)
-        #Initialize the power matrix
-
-        filters = np.linspace(self.F_min, self.F_max, self.num_filters)
 
         #Atmosphere
         if self.windspeed*self.time > 655350.0:
             aris_instance = use_aris(self.prefix_atm_data, self.grid, self.windspeed, self.time, 1)
         else:
-            aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time, 0)
+            aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
             tt_instance = tt.telescope_transmission()
             aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
 
@@ -145,7 +150,7 @@ class signal_transmitter(object):
         self.eta_atm_func_zenith = dsm.eta_atm_interp(self.eta_atm_df)
 
         #Galaxy
-        self.frequency_gal, spectrum_gal =galaxy.giveSpectrumInclSLs(12,2)
+        self.frequency_gal, spectrum_gal =galaxy.giveSpectrumInclSLs(self.luminosity, self.redshift, linewidth = self.linewidth)
         Ae = dsm.calc_eff_aper(self.frequency_gal, self.beam_radius)
         self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5
 
@@ -161,8 +166,8 @@ class signal_transmitter(object):
             power_matrix_res[:, :, j] = power_matrix[j]
         T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, self.num_samples])
         for k in range(power_matrix[0].shape[0]):
-                T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], filters)
-        return [time_vector, power_matrix_res, T_sky_matrix, filters, start] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
+                T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
+        return [time_vector, power_matrix_res, T_sky_matrix, self.filters, start] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
 
     def processInput(i, self, aris_instance, use_desim_instance, time_step, count):
         pwv_value = aris_instance.obt_pwv(time_step, count, self.windspeed)

@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import interpolate, optimize
 import os
 import math
 import numpy as np
@@ -21,11 +22,17 @@ class use_ARIS(object):
     pwv_0 = 1.0 #mm
     separation = 2*0.5663 #m (116.8 arcseconds)
     x_length_strip = 32768
+    h = 1000 #m
 
-    def __init__(self, prefix_filename, grid, windspeed, time, loadCompletePwvMap = 0):
+    def __init__(self, prefix_filename, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
+        #make function to convert EPL to pwv
+        pwv_vector = np.linspace(0, 10, 1000)
+        e_vector = use_ARIS.calc_e_from_pwv(pwv_vector)
+        self.interp_e = interpolate.interp1d(e_vector, pwv_vector)
         self.prefix_filename = prefix_filename
         self.grid = grid
         self.windspeed = windspeed
+        self.max_num_strips = max_num_strips
         self.path_model = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if __name__ == "__main__":
             self.pathname = "../Data/output_ARIS/"
@@ -37,15 +44,32 @@ class use_ARIS(object):
         else:
             self.initialize_pwv_matrix(time)
 
+    def calc_e_from_pwv(pwv):
+        a = 5.536e-4
+        b = 3.049e-5
+        T = 275
+        rho = 55.4e3
+        R = 8.314459
+        e = R * T * pwv/(use_ARIS.h - b * pwv * rho) - (a * (pwv**2) * (rho**2)) / (use_ARIS.h**2)
+        return e
+
+    def calc_e_from_EPL(self, EPL):
+        k2 = 70.4e3 #K/bar
+        k3 = 3.739e8#K**2/bar
+        T = 275
+        e = 1e6/self.h * EPL/(k2/T + k3/(T**2))
+        return e
+
     def load_complete_pwv_map(self):
+        print('Number of atmosphere strips loaded: ', self.max_num_strips)
         path = self.path_model + '/Data/output_ARIS/complete_filtered_pwv_map.txt'
         self.filtered_pwv_matrix = np.loadtxt(path)
 
     def initialize_pwv_matrix(self, time):
         max_distance = (time*self.windspeed + 2*self.separation)
         max_x_index = math.ceil(max_distance/self.grid)
-        num_strips = min(math.ceil(max_x_index/self.x_length_strip), 40)
-        print('num_strips', num_strips)
+        num_strips = min(math.ceil(max_x_index/self.x_length_strip), self.max_num_strips)
+        print('Number of atmosphere strips loaded: ', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
             d = np.loadtxt(self.pathname + filename, delimiter=',')
@@ -57,11 +81,9 @@ class use_ARIS(object):
             if i == 0:
                 self.dEPL_matrix = epl[:, 0:30]
             else:
-                # print('shape dEPL matrix part', self.dEPL_matrix.shape)
-                # print('shape new part', epl.shape)
                 self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:30]), axis = 0)
-        print('shape EPL matrix', self.dEPL_matrix.shape)
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
+        # self.pwv_matrix = self.interp_e(self.calc_e_from_EPL(self.dEPL_matrix))
         self.pwv_matrix = np.array(self.pwv_matrix)
 
     def obt_pwv(self, time, count, windspeed):

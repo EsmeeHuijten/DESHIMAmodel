@@ -9,31 +9,58 @@ import sys
 sys.path.append('./GalaxySpectrum/')
 import GalaxySpectrum.spectrumCreate as galaxy
 
-obs_time = 0.03125 #s
+def calcMaxObsTime(windspeed):
+    # maximum time
+    # every strip has 32768 x-values
+    max_obs_time = 32768.0*max_num_strips*grid/windspeed
+    return max_obs_time
+
+# Properties atmosphere
 windspeed = 10 #m/s
 prefix_atm_data = 'sample00.dat-'
 grid = 0.2 #m
+max_num_strips = 40 #increase number if there are more atmosphere strips
+
+# Properties Galaxy
+luminosity = 12
+redshift = 2
+linewidth = 300
+
+# Observation
+EL = 60.
+max_obs_time = calcMaxObsTime(windspeed)
+# obs_time = 0.03125 #s
+obs_time = 1e14
+if obs_time > max_obs_time:
+    raise ValueError('obs_time must be smaller than max_obs_time: ', max_obs_time)
+draw_filters = [250]
 save_name_plot = 'tryout.png'
+
 input_dictionary = {
     'F_min': 220e9,
-    'F_max': 440e9,
     'num_bins': 1500,
     'T': 275,
     'spec_res': 500,
-    'R': 500,
     'time': obs_time,
-    'num_filters': 350,
+    'num_filters': 347,
     'windspeed': windspeed,
     'prefix_atm_data': prefix_atm_data,
     'grid': grid,
     'beam_radius': 5.,
     'useDESIM': 1,
-    'inclAtmosphere': 1
+    'inclAtmosphere': 1,
+    'luminosity': luminosity,
+    'redshift': redshift,
+    'linewidth': linewidth,
+    'EL': EL,
+    'max_num_strips': max_num_strips
 }
 
 signal_transmitter_1 = st.signal_transmitter(input_dictionary)
 # signal_transmitter_1.save_filtered_pwv_map()
-signal_transmitter_1.draw_signal(save_name_plot, [250])
+signal_transmitter_1.draw_signal(save_name_plot, draw_filters)
+
+
 
 # Galaxy test
 # frequency,spectrum=galaxy.giveSpectrumInclSLs(12,2)
