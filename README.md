@@ -1,6 +1,6 @@
 ## Overview of the model 
 The image below shows a schematic overview of how the model is built up. 
-<img title='overview_folders_model (1).png' src='/attachments/7d0b1996-18cf-4c10-bc0c-8dd60db02ee2' width="4384" data-meta='{"width":4384,"height":1384}'>
+![Overview model](overview_folders_model (1).png)
 
 ## Output of the model 
 The model outputs the following data: 
@@ -10,7 +10,7 @@ The model outputs the following data:
 4. Center frequencies of the filters: The center frequencies of the filters in the filterbank in the MKID chip in Hz. 
 
 The pwv values are taken in the following order: 
-<img title='skychopping_5chops.png' src='/attachments/d12e23b4-fcff-404e-9e0b-8bd83b17f7e6' width="308" data-meta='{"width":208,"height":214}'>
+![pwv values](skychopping_5chops.png)
 
 ## Using the model
 The model is operated from *main.py*. In this file, there are different variables that can be set: 
