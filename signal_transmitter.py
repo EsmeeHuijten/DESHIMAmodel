@@ -44,6 +44,7 @@ class signal_transmitter(object):
         self.windspeed = input['windspeed']
         self.prefix_atm_data = input['prefix_atm_data']
         self.grid = input['grid']
+        self.x_length_strip = input['x_length_strip']
         self.beam_radius = input['beam_radius']
         self.useDESIM = input['useDESIM']
         self.inclAtmosphere = input['inclAtmosphere']
@@ -52,7 +53,8 @@ class signal_transmitter(object):
         self.linewidth = input['linewidth']
         self.EL = input['EL']
         self.max_num_strips = input['max_num_strips']
-
+        self.save_name_data = input['save_name_data']
+        self.path_model = os.path.dirname(os.path.abspath(__file__))
         self.filters = np.zeros(self.num_filters)
         for i in range(self.num_filters):
             self.filters[i] = self.F_min * (1 + 1/self.spec_res)**i
@@ -152,7 +154,7 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        windspeed = 1320000.0/self.time
+        windspeed = self.max_num_strips * self.x_length_strip * self.grid /self.time
         aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
@@ -195,7 +197,9 @@ class signal_transmitter(object):
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        if self.windspeed*self.time > 655350.0:
+        if self.windspeed*self.time > self.grid * self.max_num_strips * self.x_length_strip/2:
+            # This if statement makes sure the previously made and filtered map is loaded in
+            # rather than calculated again
             aris_instance = use_aris(self.prefix_atm_data, self.grid, self.windspeed, self.time, 1)
         else:
             aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
@@ -223,6 +227,11 @@ class signal_transmitter(object):
         T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, self.num_samples])
         for k in range(power_matrix[0].shape[0]):
                 T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
+        relpath =  '\\Data\\output_DESHIMA_model\\'
+        path_F = self.path_model + relpath + self.save_name_data + "_F"
+        path_T = self.path_model + relpath + self.save_name_data + '_T'
+        np.save(path_F, np.array(self.filters))
+        np.save(path_T, np.array(T_sky_matrix))
         return [time_vector, power_matrix_res, T_sky_matrix, self.filters, start] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
 
     def processInput(i, self, aris_instance, use_desim_instance, time_step, count):
@@ -307,7 +316,7 @@ class signal_transmitter(object):
                 print('Elapsed time: ', end - start)
                 plt.savefig(save_name_plot, transparent=True)
                 plt.show()
-                return
+                return [x, power_matrix, T_sky_matrix, filters]
             else:
                 [x, y] = self.transmit_signal_DESIM()
                 plt.title('Mock-up time signal using DESIM')

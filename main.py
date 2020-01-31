@@ -9,6 +9,20 @@ import sys
 sys.path.append('./GalaxySpectrum/')
 import GalaxySpectrum.spectrumCreate as galaxy
 
+
+
+# Properties atmosphere
+windspeed = 10 #m/s
+prefix_atm_data = 'sample00.dat-'
+grid = 0.2 #m
+x_length_strip = 32768.0
+max_num_strips = 40 #increase number if there are more atmosphere strips
+
+# Properties Galaxy
+luminosity = 12
+redshift = 2
+linewidth = 300
+
 def calcMaxObsTime(windspeed):
     """
     Calculates the maximum observing time, using the number of gridpoints in
@@ -17,19 +31,8 @@ def calcMaxObsTime(windspeed):
     """
     # maximum time
     # every strip has 32768 x-values
-    max_obs_time = 32768.0*max_num_strips*grid/windspeed
+    max_obs_time = x_length_strip*max_num_strips*grid/windspeed
     return max_obs_time
-
-# Properties atmosphere
-windspeed = 10 #m/s
-prefix_atm_data = 'sample00.dat-'
-grid = 0.2 #m
-max_num_strips = 40 #increase number if there are more atmosphere strips
-
-# Properties Galaxy
-luminosity = 12
-redshift = 2
-linewidth = 300
 
 # Observation
 EL = 60.
@@ -39,6 +42,7 @@ if obs_time > max_obs_time:
     raise ValueError('obs_time must be smaller than max_obs_time: ', max_obs_time)
 draw_filters = [250]
 save_name_plot = 'tryout.png'
+save_name_data = 'output_model'
 
 input_dictionary = {
     'F_min': 220e9,
@@ -50,6 +54,7 @@ input_dictionary = {
     'windspeed': windspeed,
     'prefix_atm_data': prefix_atm_data,
     'grid': grid,
+    'x_length_strip': x_length_strip,
     'beam_radius': 5.,
     'useDESIM': 1,
     'inclAtmosphere': 1,
@@ -57,12 +62,13 @@ input_dictionary = {
     'redshift': redshift,
     'linewidth': linewidth,
     'EL': EL,
-    'max_num_strips': max_num_strips
+    'max_num_strips': max_num_strips,
+    'save_name_data': save_name_data
 }
 
 signal_transmitter_1 = st.signal_transmitter(input_dictionary)
 # signal_transmitter_1.save_filtered_pwv_map()
-signal_transmitter_1.draw_signal(save_name_plot, draw_filters)
+[time_vector, power_matrix, T_sky_matrix, center_freq] = signal_transmitter_1.draw_signal(save_name_plot, draw_filters)
 
 ##------------------------------------------------------------------------------
 ## Code that might be useful later

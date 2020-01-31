@@ -180,73 +180,26 @@ def spectrometer_sensitivity(
     on_off: True or False
         If the observation involves on_off chopping, then the SNR degrades by sqrt(2) because
         the signal difference includes the noise twice.
+    psd_gal: vector
+        Power spectral density of the galaxy that is used in the simulation.
+        Unit: W/Hz
 
     Returns
     ----------
-    The function returns one pandas.DataFrame called 'result',
-    which contains the following rows that are all pandas.Series
+    The function returns one python dictionary called 'result',
+    which contains the following keys
     F : same as input
-    pwv : same as input
-    EL : same as input
     eta_atm : atmospheric transmission. Unit: None
     R : same as input
-    W_F_spec : equivalent bandwidth within the bandwidth of F/R. Units: Hz
-    W_F_cont : equivalent bandwidth of 1 channel including
-        the power coupled outside of the filter channel band.
-        Units: Hz
-    theta_maj : same as input.
-    theta_min : same as input.
-    eta_a : aperture efficiency (https://deshima.kibe.la/notes/324)
-    eta_mb : main beam efficiency
-    eta_forward : forward efficiency (https://deshima.kibe.la/notes/324)
-    eta_sw : coupling efficiency from a point source to the cryostat window
-    eta_window : transmission of the cryostat window
-    eta_inst : instrument optical efficiency (https://arxiv.org/abs/1901.06934)
-    eta_circuit : same as input
     Tb_sky : Planck brightness temperature of the sky. Units : K
-    Tb_M1 : Planckbrightness temperature looking
-            into the telescope primary. Units: K
-    Tb_M2 :
-        Planck brightness temperature looking
-        into the telescope secondary,
-        including the spillover to the cold sky. Units: K
-    Tb_wo : Planck brightness temperature looking into the warm optics.
-        Units: K
-    Tb_window : Planck brightness temperature looking into the window.
-        Units: K
-    Tb_co : Planck brightness temperature looking into the cold optis.
-        Units: K
-    Tb_KID : Planck brightness temperature looking into the filter
-        _from_ the KID. Units: K
-    Pkid : Power absorbed by the KID. Units: W
-    n_ph : Photon occupation number. Units: None.
-        (http://adsabs.harvard.edu/abs/1999ASPC..180..671R)
-    NEPkid : Noise equivalent power at the KID
-        with respect to the absorbed power. Units: W Hz^0.5
-    NEPinst : Instrumnet NEP  Units: W Hz^0.5
-        (https://arxiv.org/abs/1901.06934).
-    NEFD_line : Noise Equivalent Flux Density for
-        couploing to a line that is not wider than the
-        filter bandwidth. Units: W/m^2/Hz * s^0.5
-    NEFD_continuum : Noise Equivalent Flux Density for
-        couploing to a countinuum source. Units: W/m^2/Hz * s^0.5
-    NEFD_ : Noise Equivalent Flux Density for
-        couploing to a countinuum source. Units: W/m^2/Hz * s^0.5
-    NEF : Noise Equivalent Flux. Units: W/m^2 * s^0.5
-    MDLF : Minimum Detectable Line Flux. Units: W/m^2
-    snr : same as input.
-    obs_hours : same as input.
-    on_source_fraction : same as input.
-    on_source_hours : obs_hours * obs_hours*on_source_fraction Units: None.
-    equivalent_Trx :
-        equivalent receiver noise temperature. Units: K
-        at the moment this assumes Rayleigh-Jeans!
+    psd_co: Johnson-Nyquist power spectral density of the cold-optics temperature.. Units: W/Hz
+    psd_jn_chip: Johnson-Nyquist power spectral density of . Units: W/Hz
+    psd_KID: Johnson-Nyquist power spectral density of the KID (Kinetic Inductance Detector). Units: W/Hz
 
     Note
     ----------------
     - The parameters to calculate the window transmission / reflection
     is hard-coded in the function window_trans().
-
     """
 
     # Equivalent Bandwidth of 1 channel.
