@@ -33,9 +33,10 @@ class use_ARIS(object):
 
     def __init__(self, prefix_filename, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
         #make function to convert EPL to pwv
-        pwv_vector = np.linspace(0, 10, 1000)
-        e_vector = use_ARIS.calc_e_from_pwv(pwv_vector)
-        self.interp_e = interpolate.interp1d(e_vector, pwv_vector)
+        # pwv_vector = np.linspace(0, 5e-3, 1000)
+        # e_vector = use_ARIS.calc_e_from_pwv(pwv_vector)
+        # self.interp_e = interpolate.interp1d(e_vector, pwv_vector)
+        
         self.prefix_filename = prefix_filename
         self.grid = grid
         self.windspeed = windspeed
@@ -80,8 +81,8 @@ class use_ARIS(object):
             partial pressure of water vapor
             Unit: kPa
         """
-        k2 = 70.4e3 #K/bar
-        k3 = 3.739e8#K**2/bar
+        k2 = 70.4e2 #K/kPa
+        k3 = 3.739e7 #K**2/kPa
         T = 275
         e = 1e6/self.h * EPL/(k2/T + k3/(T**2))
         return e
@@ -116,7 +117,8 @@ class use_ARIS(object):
             else:
                 self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:30]), axis = 0)
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
-        # self.pwv_matrix = self.interp_e(self.calc_e_from_EPL(self.dEPL_matrix))
+        # e_matrix = self.calc_e_from_EPL(self.dEPL_matrix*1e-3)
+        # self.pwv_matrix = self.interp_e(e_matrix)*1e3 #in mm
         self.pwv_matrix = np.array(self.pwv_matrix)
 
     def obt_pwv(self, time, count, windspeed):
