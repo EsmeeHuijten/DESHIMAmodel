@@ -10,7 +10,7 @@ The model outputs the following data:
 4. Center frequencies of the filters: The center frequencies of the filters in the filterbank in the MKID chip in Hz. 
 
 The pwv values are taken in the following order: 
-![pwv values](skychopping_5chops.png=300x)
+![pwv values](skychopping_5chops.png =300x)
 
 ## Using the model
 The model is operated from *main.py*. In this file, there are different variables that can be set: 
