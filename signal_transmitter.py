@@ -54,6 +54,7 @@ class signal_transmitter(object):
         self.EL = input['EL']
         self.max_num_strips = input['max_num_strips']
         self.save_name_data = input['save_name_data']
+        self.pwv_0 = input['pwv_0']
         self.path_model = os.path.dirname(os.path.abspath(__file__))
         self.filters = np.zeros(self.num_filters)
         for i in range(self.num_filters):
@@ -200,9 +201,9 @@ class signal_transmitter(object):
         if self.windspeed*self.time > self.grid * self.max_num_strips * self.x_length_strip/2:
             # This if statement makes sure the previously made and filtered map is loaded in
             # rather than calculated again
-            aris_instance = use_aris(self.prefix_atm_data, self.grid, self.windspeed, self.time, 1)
+            aris_instance = use_aris(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, 1)
         else:
-            aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
+            aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
             tt_instance = tt.telescope_transmission()
             aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
 

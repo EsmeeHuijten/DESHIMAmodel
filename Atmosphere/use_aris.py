@@ -26,17 +26,16 @@ class use_ARIS(object):
     """
 
     a = 6.3003663 #m
-    pwv_0 = 1.0 #mm
     separation = 2*0.5663 #m (116.8 arcseconds)
     x_length_strip = 32768
     h = 1000 #m
 
-    def __init__(self, prefix_filename, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
+    def __init__(self, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
         #make function to convert EPL to pwv
         # pwv_vector = np.linspace(0, 5e-3, 1000)
         # e_vector = use_ARIS.calc_e_from_pwv(pwv_vector)
         # self.interp_e = interpolate.interp1d(e_vector, pwv_vector)
-        
+        self.pwv_0 = pwv_0
         self.prefix_filename = prefix_filename
         self.grid = grid
         self.windspeed = windspeed
