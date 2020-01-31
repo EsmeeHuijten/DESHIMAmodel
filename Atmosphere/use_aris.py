@@ -17,6 +17,13 @@ sys.path.insert(1, '../')
 # import Telescope.telescope_transmission as tt
 
 class use_ARIS(object):
+    """
+    This class is used to convert the atmosphere data that is obtained from
+    ARIS to a useful datatype. It loads in the atmosphere data, converts it to
+    a matrix and converts the Extra Path Length to the precipitable water vapor
+    using the Smith-Weintraub equation for the Extra Path Length and the Ideal
+    Gas Law (later, hopefully the VanDerWaals law).
+    """
 
     a = 6.3003663 #m
     pwv_0 = 1.0 #mm
@@ -45,6 +52,16 @@ class use_ARIS(object):
             self.initialize_pwv_matrix(time)
 
     def calc_e_from_pwv(pwv):
+        """Calculates the simple partial pressure of water vapor, using the
+        VanDerWaals equation of state and values for the parameters a and b
+        taken from 'CRC Handbook for chemistry and physics', 64th edition.
+
+        Returns
+        ------------
+        e: scalar or array
+            partial pressure of water vapor
+            Unit: kPa
+        """
         a = 5.536e-4
         b = 3.049e-5
         T = 275
@@ -54,6 +71,15 @@ class use_ARIS(object):
         return e
 
     def calc_e_from_EPL(self, EPL):
+        """Calculates the partial pressure of water vapor, using the Smith-Weintraub
+        formula for Extra Path Length (DOI: 10.1109/JRPROC.1953.274297)
+
+        Returns
+        ------------
+        e: scalar or array
+            partial pressure of water vapor
+            Unit: kPa
+        """
         k2 = 70.4e3 #K/bar
         k3 = 3.739e8#K**2/bar
         T = 275
@@ -61,11 +87,18 @@ class use_ARIS(object):
         return e
 
     def load_complete_pwv_map(self):
+        """Loads the previously saved pwv map. This map is already filtered with
+        a Gaussian beam.
+        """
         print('Number of atmosphere strips loaded: ', self.max_num_strips)
         path = self.path_model + '/Data/output_ARIS/complete_filtered_pwv_map.txt'
         self.filtered_pwv_matrix = np.loadtxt(path)
 
     def initialize_pwv_matrix(self, time):
+        """Initializes the pwv_matrix property of the use_ARIS instance. It loads
+        in the amount of atmosphere strips that it needs, converts it into a matrix
+        and then converts EPL to pwv.
+        """
         max_distance = (time*self.windspeed + 2*self.separation)
         max_x_index = math.ceil(max_distance/self.grid)
         num_strips = min(math.ceil(max_x_index/self.x_length_strip), self.max_num_strips)
@@ -87,6 +120,15 @@ class use_ARIS(object):
         self.pwv_matrix = np.array(self.pwv_matrix)
 
     def obt_pwv(self, time, count, windspeed):
+        """Obtains the precipitable Water vapor from the pwv_matrix at 5 different positions, to
+        make sky chopping and nodding possible in 2 directons.
+
+        Returns
+        ------------
+        pwv: array
+            precipitable water vapor on at 5 different positions.
+            Unit: m
+        """
         pwv_matrix = self.filtered_pwv_matrix
         length_x = pwv_matrix.shape[0]
         positions = self.calc_coordinates(time, windspeed)
@@ -94,6 +136,15 @@ class use_ARIS(object):
         return pwv
 
     def calc_coordinates(self, time, windspeed):
+        """Calculates the positions at which the pwv needs to be taken. Five
+        different positions are taken, to make sky chopping and nodding possible
+        in 2 directons.
+
+        Returns
+        ------------
+        Positions: array
+            The positions (gridpoints) at which the pwv needs to be taken.
+        """
         grid_dif = int(round(self.separation/self.grid)) #number of gridpoints difference between positions
         distance = time*windspeed
         x_index = (int(round(distance/self.grid)))
@@ -103,7 +154,12 @@ class use_ARIS(object):
         pos_3 = (x_index + 2*grid_dif), y_index
         pos_4 = (x_index + grid_dif), y_index + grid_dif
         pos_5 = (x_index + grid_dif), y_index - grid_dif
-        return [pos_1, pos_2, pos_3, pos_4, pos_5]
+        positions = [pos_1, pos_2, pos_3, pos_4, pos_5]
+        return positions
+
+##------------------------------------------------------------------------------
+## The methods below are not used in the model atm
+##------------------------------------------------------------------------------
 
     def make_image(self):
         fig = plt.figure()
