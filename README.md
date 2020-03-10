@@ -16,6 +16,7 @@ The pwv values are taken in the following order:
 The model is operated from *main.py*. In this file, there are different variables that can be set: 
 
 ### Atmosphere
+**pwv_0** (*float*): The value of the precipitable water vapor that is added to the dpwv from ARIS in mm. 
 **windspeed** (*float*): The windspeed of the atmosphere in m/s.
 **prefix_atm_data** (*string*): The beginning of the name with which the atmosphere data is saved in *./Data/output_ARIS*. For example, if the files are called
 *sample-00.dat-000*, *sample-00.dat-001* etc, then Prefix_atm_data must be 'sample-00.dat-'
@@ -37,6 +38,7 @@ The model is operated from *main.py*. In this file, there are different variable
 
 ### Important
 1. All atmosphere strips must have the same length in the x direction and a length in the y direction of at least 30 gridpoints. ('length' means number of gridpoints, *not* distance in meters)
+2. If **pwv_0** is changed, signal_transmitter.save_filtered_pwv_map() needs to run again to save the right pwv map (See section 'Changing the atmosphere data' to see how'). 
 
 ## Changing the atmosphere data
 1. Save the new atmosphere data in *./Data/output_ARIS/*
