@@ -71,6 +71,7 @@ def spectrometer_sensitivity(
         obs_hours=10.,
         on_source_fraction=0.4*0.9,
         psd_gal = 0,
+        inclGal = 0,
         on_off = True
         ):
     """
@@ -183,6 +184,8 @@ def spectrometer_sensitivity(
     psd_gal: vector
         Power spectral density of the galaxy that is used in the simulation.
         Unit: W/Hz
+    inclGal: integer
+        Equals 1 if the galaxy spectrum needs to be added. Equals 0 otherwise
 
     Returns
     ----------
@@ -229,7 +232,10 @@ def spectrometer_sensitivity(
     # Calcuate eta. scalar/vector depending on F.
     eta_atm = eta_atm_func(F=F, pwv=pwv, EL=EL, R=R, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith)
     # Johnson-Nyquist Power Spectral Density (W/Hz) for the physical temperatures of each stage
-    psd_jn_cmb_and_gal   = johnson_nyquist_psd(F=F, T=Tb_cmb) + psd_gal
+    if inclGal == 1:
+        psd_jn_cmb_and_gal   = johnson_nyquist_psd(F=F, T=Tb_cmb) + psd_gal
+    else:
+        psd_jn_cmb_and_gal   = johnson_nyquist_psd(F=F, T=Tb_cmb)
     if type(psd_jn_cmb_and_gal) != np.float64:
         psd_jn_cmb_and_gal = psd_jn_cmb_and_gal.reshape([psd_jn_cmb_and_gal.shape[0], 1])
     psd_jn_amb   = johnson_nyquist_psd(F=F, T=Tp_amb)

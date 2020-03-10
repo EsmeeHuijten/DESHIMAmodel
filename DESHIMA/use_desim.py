@@ -73,7 +73,8 @@ class use_desim(object):
         eta_atm_func_zenith = signal_instance.eta_atm_func_zenith
         psd_gal = signal_instance.psd_gal
         EL = signal_instance.EL
-
+        pwv_values_no_gal = np.array([pwv_value[0], pwv_value[2], pwv_value[3], pwv_value[4]])
+        pwv_value_gal = np.array([pwv_value[0], pwv_value[1]])
         F_filters = signal_instance.filters
         margin = 10e9
         F_bins_Lor = np.linspace(F_min - margin,F_max + margin,num_bins_Lor)
@@ -85,18 +86,32 @@ class use_desim(object):
             'F_highres': F_highres,
             'eta_atm_func_zenith': eta_atm_func_zenith,
             'F' : F_bins_Lor,
-            'pwv':pwv_value,
+            'pwv':pwv_values_no_gal,
             'EL':EL,
             'R' : R,
             'theta_maj' : HPBW,
             'theta_min' : HPBW,
             'eta_mb' : eta_mb,
-            'psd_gal': psd_gal
+            'psd_gal': psd_gal,
+            'inclGal': 0
         }
         Desim_input = dict(self.instrument_properties, **Desim_input_params)
-        DESHIMA_transmitted = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
-        psd_co = DESHIMA_transmitted['psd_co'] #vector because of F
-        psd_jn_chip = DESHIMA_transmitted['psd_jn_chip']
+        DESHIMA_transmitted_no_gal = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
+        Desim_input_params['pwv'] = pwv_value_gal
+        Desim_input_params['inclGal'] = 1
+        Desim_input = dict(self.instrument_properties, **Desim_input_params)
+        DESHIMA_transmitted_gal = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
+        psd_co_no_gal = DESHIMA_transmitted_no_gal['psd_co'] #vector because of F
+        psd_co_gal = DESHIMA_transmitted_gal['psd_co']
+        psd_co = np.zeros([num_bins_Lor, 5])
+        for i in range(0, 4):
+            if i == 0:
+                psd_co[:, 0] = psd_co_no_gal[:, 0]
+            else:
+                psd_co[:, i + 1] = psd_co_no_gal[:, i]
+        psd_co[:, 1] = psd_co_gal[:, 1]
+        psd_jn_chip = DESHIMA_transmitted_no_gal['psd_jn_chip']
+        # print('psd_jn_chip',  DESHIMA_transmitted_no_gal['psd_jn_chip'].shape)
 
         F_bins_Lor_mesh, F_filters_mesh = np.meshgrid(F_bins_Lor, F_filters)
 
@@ -117,7 +132,7 @@ class use_desim(object):
             result = psd_KID_in_i + psd_medium[i, :]
             psd_KID[:, :, i] = result
 
-        return DESHIMA_transmitted, F_bins_Lor, psd_KID, F_filters
+        return DESHIMA_transmitted_no_gal, F_bins_Lor, psd_KID, F_filters
 
 ##------------------------------------------------------------------------------
 ## Everything under this is not used in the model, only for making plots

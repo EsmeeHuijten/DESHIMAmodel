@@ -194,18 +194,19 @@ class signal_transmitter(object):
             elapsed time after running the program.
             Unit: s
         """
+        start_non_parallel = time.time()
         self.num_samples = int(self.time*self.sampling_rate)
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        if self.windspeed*self.time > self.grid * self.max_num_strips * self.x_length_strip/2:
-            # This if statement makes sure the previously made and filtered map is loaded in
-            # rather than calculated again
-            aris_instance = use_aris(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, 1)
-        else:
-            aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
-            tt_instance = tt.telescope_transmission()
-            aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
+        # if self.windspeed*self.time > self.grid * self.max_num_strips * self.x_length_strip/2:
+        #     # This if statement makes sure the previously made and filtered map is loaded in
+        #     # rather than calculated again
+        #     aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 1)
+        # else:
+        aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
+        tt_instance = tt.telescope_transmission()
+        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
 
         self.eta_atm_df, self.F_highres = dsm.load_eta_atm()
         self.eta_atm_func_zenith = dsm.eta_atm_interp(self.eta_atm_df)
@@ -218,22 +219,32 @@ class signal_transmitter(object):
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
 
-        start = time.time()
-        inputs = range(self.num_samples)
         num_cores = multiprocessing.cpu_count()
-        power_matrix = Parallel(n_jobs=32)(delayed(signal_transmitter.processInput)(i, self, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
-        power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, self.num_samples])
-        for j in range(self.num_samples):
-            power_matrix_res[:, :, j] = power_matrix[j]
-        T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, self.num_samples])
-        for k in range(power_matrix[0].shape[0]):
-                T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
+        # print('number of cores', num_cores)
+        end_non_parallel = time.time()
+        print('Elapsed time non-parallel part: ', end_non_parallel-start_non_parallel)
+        print('Going into parallel')
         relpath =  '\\Data\\output_DESHIMA_model\\'
         path_F = self.path_model + relpath + self.save_name_data + "_F"
-        path_T = self.path_model + relpath + self.save_name_data + '_T'
         np.save(path_F, np.array(self.filters))
-        np.save(path_T, np.array(T_sky_matrix))
-        return [time_vector, power_matrix_res, T_sky_matrix, self.filters, start] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
+        start = time.time()
+        for l in np.array([6, 7]):
+            step_round = math.floor(self.num_samples/8)
+            inputs = range(l * step_round, (l+1) * step_round)
+            power_matrix = Parallel(n_jobs=30)(delayed(signal_transmitter.processInput)(i, self, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
+            power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+            for j in range(step_round):
+                power_matrix_res[:, :, j] = power_matrix[j]
+            T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+            for k in range(power_matrix[0].shape[0]):
+                    T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
+            path_T = self.path_model + relpath + self.save_name_data + "_T_" + str(l)
+            np.save(path_T, np.array(T_sky_matrix))
+            del T_sky_matrix, power_matrix, power_matrix_res
+            print('Finished round ' + str(l + 1) + ' out of 8')
+        end = time.time()
+        print('Elapsed time parallel part: ', end - start)
+        return [time_vector, self.filters] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
 
     def processInput(i, self, aris_instance, use_desim_instance, time_step, count):
         """
@@ -249,8 +260,8 @@ class signal_transmitter(object):
             [5 (number of different pwv values), number of filters]
             Unit: W
         """
-        pwv_value = aris_instance.obt_pwv(time_step, count, self.windspeed)
-        [self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_value)[1:4]
+        pwv_values = aris_instance.obt_pwv(time_step, count, self.windspeed)
+        [self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[1:4]
 
         # Calculate the power from psd_KID
         self.P_bin_centres = self.psd_bin_centres * (self.bin_centres[1]-self.bin_centres[0]) #matrix, power
@@ -314,7 +325,7 @@ class signal_transmitter(object):
                     plt.ylabel('T_sky (K)')
                 # plt.tight_layout()
                 end = time.time()
-                print('Elapsed time: ', end - start)
+                print('Elapsed time parallel part: ', end - start)
                 plt.savefig(save_name_plot, transparent=True)
                 plt.show()
                 return [x, power_matrix, T_sky_matrix, filters]

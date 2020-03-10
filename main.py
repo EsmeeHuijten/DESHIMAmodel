@@ -18,9 +18,9 @@ x_length_strip = 32768.0
 max_num_strips = 40 #increase number if there are more atmosphere strips
 
 # Properties Galaxy
-luminosity = 12
-redshift = 2
-linewidth = 300
+luminosity = 13.7
+redshift = 4.43
+linewidth = 600
 
 def calcMaxObsTime(windspeed):
     """
@@ -37,7 +37,10 @@ def calcMaxObsTime(windspeed):
 # Observation
 EL = 60.
 max_obs_time = calcMaxObsTime(windspeed)
-obs_time = 0.03125 #s
+# obs_time = 2 #s
+
+obs_time = max_obs_time
+# obs_time = 0.2
 if obs_time > max_obs_time:
     raise ValueError('obs_time must be smaller than max_obs_time: ', max_obs_time)
 draw_filters = [250] #starts counting from 1
@@ -69,8 +72,8 @@ input_dictionary = {
 
 signal_transmitter_1 = st.signal_transmitter(input_dictionary)
 # signal_transmitter_1.save_filtered_pwv_map()
-[time_vector, power_matrix, T_sky_matrix, center_freq] = signal_transmitter_1.draw_signal(save_name_plot, draw_filters)
-
+[time_vector, center_freq] = signal_transmitter_1.transmit_signal_DESIM_multf_atm()
+print('Finished')
 ##------------------------------------------------------------------------------
 ## Code that might be useful later
 ##------------------------------------------------------------------------------
