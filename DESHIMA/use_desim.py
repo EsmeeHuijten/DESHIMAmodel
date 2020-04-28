@@ -103,6 +103,7 @@ class use_desim(object):
         DESHIMA_transmitted_gal = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
         psd_co_no_gal = DESHIMA_transmitted_no_gal['psd_co'] #vector because of F
         psd_co_gal = DESHIMA_transmitted_gal['psd_co']
+        # print('psd_co_gal', psd_co_gal.shape)
         psd_co = np.zeros([num_bins_Lor, 5])
         for i in range(0, 4):
             if i == 0:

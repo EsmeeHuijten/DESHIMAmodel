@@ -228,7 +228,7 @@ class signal_transmitter(object):
         path_F = self.path_model + relpath + self.save_name_data + "_F"
         np.save(path_F, np.array(self.filters))
         start = time.time()
-        for l in np.array([6, 7]):
+        for l in range(8):
             step_round = math.floor(self.num_samples/8)
             inputs = range(l * step_round, (l+1) * step_round)
             power_matrix = Parallel(n_jobs=30)(delayed(signal_transmitter.processInput)(i, self, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)

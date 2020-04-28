@@ -106,8 +106,11 @@ class use_ARIS(object):
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
             d = np.loadtxt(self.pathname + filename, delimiter=',')
+            # print('dimensions atmosphere strips')
             nx = int(max(d[:, 0])) + 1
             ny = int(max(d[:, 1])) + 1
+            # print('x: ', nx)
+            # print('y: ', ny)
             epl= np.zeros([nx,ny])
             for j in range(len(d)):
                 epl[int(d[j, 0]), int(d[j, 1])] = int(d[j, 2])
