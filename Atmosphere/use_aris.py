@@ -106,18 +106,26 @@ class use_ARIS(object):
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
             d = np.loadtxt(self.pathname + filename, delimiter=',')
+            # print(len(d))
             # print('dimensions atmosphere strips')
-            nx = int(max(d[:, 0])) + 1
-            ny = int(max(d[:, 1])) + 1
+            if i == 0:
+                nx = int(max(d[:, 0])) + 1
+                ny = int(max(d[:, 1])) + 1
             # print('x: ', nx)
             # print('y: ', ny)
             epl= np.zeros([nx,ny])
+            # print(epl.shape)
             for j in range(len(d)):
-                epl[int(d[j, 0]), int(d[j, 1])] = int(d[j, 2])
+                epl[int(d[j, 0])-int(d[0, 0]), int(d[j, 1])] = int(d[j, 2])
+            # print(i)
             if i == 0:
                 self.dEPL_matrix = epl[:, 0:30]
+                # print('intermediate size EPL', self.dEPL_matrix.shape)
+                # self.dEPL_matrix = epl
             else:
                 self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:30]), axis = 0)
+                # print('intermediate size EPL', self.dEPL_matrix.shape)
+        # print(self.dEPL_matrix[0:160, 0:160])
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
         # e_matrix = self.calc_e_from_EPL(self.dEPL_matrix*1e-3)
         # self.pwv_matrix = self.interp_e(e_matrix)*1e3 #in mm
@@ -168,26 +176,44 @@ class use_ARIS(object):
     def make_image(self):
         fig = plt.figure()
         ax = plt.subplot(111)
-        im = plt.imshow(self.pwv_matrix)
-        # plt.gcf().subplots_adjust(top=0.83)
-        ax.set_xlabel("[m]")
-        ax.set_ylabel("[m]")
-        ax_new = ax.twinx().twiny()
-        ax_new.set_ylabel("arcsec")
-        ticks = np.linspace(0, 1, 5)
-        ticklabels = np.round(use_ARIS.m2arcsec(ticks*512)) #hardcoded
-        plt.xticks(ticks, ticklabels)
-        plt.yticks(ticks, ticklabels)
-        ax_new.set_xlabel("arcsec")
+        print(self.pwv_matrix.shape)
+        # plot_matrix = self.pwv_matrix[1000:1150, 0:150]
+        plot_matrix = self.pwv_matrix[0:159, 0:159]
+        print(plot_matrix)
+        im = plt.imshow(plot_matrix)
+        ticks = np.round(np.linspace(0, 160, 9))
+        ticklabels = ticks/5
+        ticklabels = ticklabels.astype(int)
+        plt.xticks(ticks, ticklabels, fontsize=14)
+        plt.yticks(ticks, ticklabels, fontsize=14)
+        # # plt.gcf().subplots_adjust(top=0.83)
+        ax.set_xlabel("East-west distance (m)", fontsize=14)
+        ax.set_ylabel("North-south distance (m)", fontsize=14)
+        # ax_new = ax.twiny()
+        # ax_new.set_ylabel("Precipitable water vapor (mm)", fontsize=14)
+        # ax_new.set_ylabel("arcsec")
+        # ticks = np.linspace(0, 1, 5)
+        # ticklabels = np.round(use_ARIS.m2arcsec(ticks*512)) #hardcoded
+        # plt.xticks(ticks, ticklabels)
+        # plt.yticks(ticks, ticklabels)
+        # ax_new.set_xlabel("arcsec")
 
         # secax = ax.secondary_yaxis('right', functions=(use_ARIS.m2arcsec, use_ARIS.arcsec2m))
-        ax_new.set_title("Atmosphere Structure", fontsize=20)
-        divider = make_axes_locatable(ax_new)
-        # cax = divider.append_axes("right", size="4%", pad=0)
-        # on the figure total in precent [left, bottom, width, height]
-        cax = fig.add_axes([0.95, 0.1, 0.02, 0.75])
-        colorbar_1 = fig.colorbar(im, cax=cax)
-        colorbar_1.set_label('pwv in mm', labelpad=-10, y=1.05, rotation=0)
+        # ax.set_title("Atmosphere Structure", fontsize=16)
+        # plt.text(0.9, 0.8, 'Precipitable water vapor (mm)', fontsize=14, rotation=90)
+        plt.text(1.24, 0.5, r"Precipitable water vapor (mm)", {'fontsize': 14},
+         horizontalalignment='left',
+         verticalalignment='center',
+         rotation=90,
+         clip_on=False,
+         transform=plt.gca().transAxes)
+        # divider = make_axes_locatable(ax_new)
+        # # cax = divider.append_axes("right", size="4%", pad=0)
+        # # on the figure total in precent [left, bottom, width, height]
+        cax = fig.add_axes([0.82, 0.12, 0.02, 0.76])
+        colorbar_1 = fig.colorbar(im, cax=cax, format='%.4f')
+        plt.savefig('Atmosphere window.pdf', format='pdf')
+        # colorbar_1.set_label('precipitable water vapor (mm)', labelpad=-10, y=1.05, rotation=0)
         plt.show()
 
     def m2arcsec(x):
@@ -234,6 +260,8 @@ class use_ARIS(object):
         plt.show()
         plt.pause(0.05)
 
+# ARIS_instance_1 = use_ARIS('ARIS_200427.dat-', 1.0, 0.2, 10, 0, 40)
+# ARIS_instance_1.make_image()
 # filename = "sample00.dat"
 # length_side = 100
 # atm_data_1 = use_ARIS(filename)

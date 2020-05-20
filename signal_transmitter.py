@@ -155,14 +155,15 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        windspeed = self.max_num_strips * self.x_length_strip * self.grid /self.time
-        aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.grid, self.windspeed, self.time)
+        # windspeed = self.max_num_strips * self.x_length_strip * self.grid /self.time
+        aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
-        path = os.path.dirname(os.path.abspath(__file__))
-        relpath = '/Data/output_ARIS/'
-        filename = 'remove_me.txt'
-        np.savetxt(path + relpath + filename, aris_instance.filtered_pwv_matrix)
+        return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
+        # path = os.path.dirname(os.path.abspath(__file__))
+        # relpath = '/Data/output_ARIS/'
+        # filename = 'remove_me.txt'
+        # np.savetxt(path + relpath + filename, aris_instance.filtered_pwv_matrix)
 
     def transmit_signal_DESIM_multf_atm(self):
         """
@@ -269,6 +270,7 @@ class signal_transmitter(object):
         noise_signal = pn.photon_noise(self.P_bin_centres, self.bin_centres, self.sampling_rate, self.spec_res)
         signal_matrix = noise_signal.calcTimeSignalBoosted(atm = 1)
         power_matrix_column = np.sum(signal_matrix, axis=2)
+        # power_matrix_column = np.sum(self.P_bin_centres, axis=2)
         return power_matrix_column
 
     def convert_P_to_Tsky(self, power_matrix, filters):
