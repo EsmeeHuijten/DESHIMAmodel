@@ -12,10 +12,10 @@ import GalaxySpectrum.spectrumCreate as galaxy
 # Properties atmosphere
 pwv_0 = 1.0 #mm
 windspeed = 10 #m/s
-prefix_atm_data = 'sample00.dat-'
+prefix_atm_data = 'aris200602.dat-'
 grid = 0.2 #m
-x_length_strip = 32768.0
-max_num_strips = 40 #increase number if there are more atmosphere strips
+x_length_strip = 65536.0
+max_num_strips = 32 #increase number if there are more atmosphere strips
 
 # Properties Galaxy
 luminosity = 13.7
@@ -37,21 +37,43 @@ def calcMaxObsTime(windspeed):
 # Observation
 EL = 60.
 max_obs_time = calcMaxObsTime(windspeed)
-# obs_time = 2 #s
-
 obs_time = max_obs_time
-# obs_time = 0.2
+# obs_time = 2.
+
 if obs_time > max_obs_time:
     raise ValueError('obs_time must be smaller than max_obs_time: ', max_obs_time)
-draw_filters = [250] #starts counting from 1
-save_name_plot = 'tryout.png'
+
 save_name_data = 'output_model'
 
-input_dictionary = {
+input_dictionary_D1 = {
+    'F_min': 332e9,
+    'num_bins': 1500,
+    'spec_res': 300,
+    'f_spacing': 380,
+    'time': obs_time,
+    'num_filters': 49,
+    'windspeed': windspeed,
+    'prefix_atm_data': prefix_atm_data,
+    'grid': grid,
+    'x_length_strip': x_length_strip,
+    'beam_radius': 5.,
+    'useDESIM': 1,
+    'inclAtmosphere': 1,
+    'luminosity': luminosity,
+    'redshift': redshift,
+    'linewidth': linewidth,
+    'EL': EL,
+    'max_num_strips': max_num_strips,
+    'save_name_data': save_name_data,
+    'pwv_0': pwv_0,
+    'D1': 1
+}
+
+input_dictionary_D2 = {
     'F_min': 220e9,
     'num_bins': 1500,
-    'T': 275,
     'spec_res': 500,
+    'f_spacing': 500,
     'time': obs_time,
     'num_filters': 347,
     'windspeed': windspeed,
@@ -67,13 +89,14 @@ input_dictionary = {
     'EL': EL,
     'max_num_strips': max_num_strips,
     'save_name_data': save_name_data,
-    'pwv_0': pwv_0
+    'pwv_0': pwv_0,
+    'D1': 0
 }
 
-signal_transmitter_1 = st.signal_transmitter(input_dictionary)
-# signal_transmitter_1.save_filtered_pwv_map()
+signal_transmitter_1 = st.signal_transmitter(input_dictionary_D1)
 [time_vector, center_freq] = signal_transmitter_1.transmit_signal_DESIM_multf_atm()
 print('Finished')
+
 ##------------------------------------------------------------------------------
 ## Code that might be useful later
 ##------------------------------------------------------------------------------

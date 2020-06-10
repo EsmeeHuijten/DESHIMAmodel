@@ -103,27 +103,26 @@ def gaus(x,a,x0,sigma):
 ##
 ##-----------------------------------------
 
-def giveSpectrumInclSLs(luminosity,redshift,fLow=220,fHigh=440,numFreqBins = 1500,linewidth=300): #now hardcoded
+def giveSpectrumInclSLs(luminosity,redshift,fLow=220,fHigh=440,numFreqBins = 1500,linewidth=300):
 	# Luminosity in units of log(L_fir [L_sol])
 	# fLow, fHigh in units of GHz
 	# linewidth in units of km/s
 	# Output: freqArray -> frequencies in units of GHz
 	# Output: spectrum -> the spectrum in units of Jy
-	import numpy as np
+    margin = 10
 	# Generate frequency array
-	freqArray = np.linspace(fLow,fHigh, numFreqBins)
-    # print(len(freqArray))
+    freqArray = np.linspace(fLow-margin, fHigh+margin, numFreqBins)
 	# Create spectrum according to Bakx+2018
-	spectrum = tomModel(freqArray*(1.e9),1,redshift,T_cold,T_hot,Ratio,Beta)
+    spectrum = tomModel(freqArray*(1.e9),1,redshift,T_cold,T_hot,Ratio,Beta)
 	# Normalize the flux to the given far-IR luminosity
-	normLum = giveLuminosity(np.array([spectrum[0],spectrum[0]]),np.array([1,1]),((3.e8)/((1.e9)*np.array([freqArray[0],freqArray[0]]))),redshift,T_cold,T_hot,Ratio,Beta)
-	spectrum = (10.**luminosity)*spectrum/normLum
+    normLum = giveLuminosity(np.array([spectrum[0],spectrum[0]]),np.array([1,1]),((3.e8)/((1.e9)*np.array([freqArray[0],freqArray[0]]))),redshift,T_cold,T_hot,Ratio,Beta)
+    spectrum = (10.**luminosity)*spectrum/normLum
 	# Add the spectrum lines
-	B,names = gl.LFIRtoSL(luminosity,redshift,0,giveNames='Table')
-	for i in range(len(B)):
-		specLine = gaus(freqArray,B[i,1]*(600/linewidth),B[i,0],B[i,0]*linewidth/(3.e5))
-		spectrum += specLine
-	return freqArray,spectrum
+    B,names = gl.LFIRtoSL(luminosity,redshift,0,giveNames='Table')
+    for i in range(len(B)):
+        specLine = gaus(freqArray,B[i,1]*(600/linewidth),B[i,0],B[i,0]*linewidth/(3.e5))
+        spectrum += specLine
+    return freqArray,spectrum
 
 
 B,names = gl.LFIRtoSL(12,2,0,giveNames='Table')

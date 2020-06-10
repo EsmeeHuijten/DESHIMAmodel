@@ -27,14 +27,30 @@ class use_desim(object):
     eta_pb = 0.4
 
     def __init__(self):
-        self.instrument_properties = {
+
+        self.instrument_properties_D1 = {
+            'eta_M1_spill' : 0.99,
+            'eta_M2_spill' : 0.90,
+            'n_wo_mirrors' : 2.,
+            'window_AR' : False,
+            'eta_co' : 0.65, # product of co spillover, qo filter
+            'eta_lens_antenna_rad' : 0.81, # D2_2V3.pdf, p14: front-to-back ratio 0.93 * reflection efficiency 0.9 * matching 0.98 * antenna spillover 0.993
+            'eta_IBF' : 0.6,
+            'KID_excess_noise_factor' : 1.0,
+            'Tb_cmb' : 2.725,
+            'Tp_amb' : 273.,
+            'Tp_cabin' : 290.,
+            'Tp_co' : 4.,
+            'Tp_chip' : 0.12,
+        }
+
+        self.instrument_properties_D2 = {
             'eta_M1_spill' : 0.99,
             'eta_M2_spill' : 0.90,
             'n_wo_mirrors' : 4.,
             'window_AR' : True,
             'eta_co' : 0.65, # product of co spillover, qo filter
             'eta_lens_antenna_rad' : 0.81, # D2_2V3.pdf, p14: front-to-back ratio 0.93 * reflection efficiency 0.9 * matching 0.98 * antenna spillover 0.993
-            'eta_circuit' : 0.35, # 'Alejandro Efficiency', from the feedpoint of the antenna to being absorbed in the KID.
             'eta_IBF' : 0.6,
             'KID_excess_noise_factor' : 1.1,
             'Tb_cmb' : 2.725,
@@ -42,9 +58,6 @@ class use_desim(object):
             'Tp_cabin' : 290.,
             'Tp_co' : 4.,
             'Tp_chip' : 0.12,
-            'snr' : 5,
-            'obs_hours' :8.,
-            'on_source_fraction':0.4*0.9, # ON-OFF 40%, calibration overhead of 10%
         }
 
     def calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R):
@@ -73,14 +86,27 @@ class use_desim(object):
         eta_atm_func_zenith = signal_instance.eta_atm_func_zenith
         psd_gal = signal_instance.psd_gal
         EL = signal_instance.EL
+        D1 = signal_instance.D1
         pwv_values_no_gal = np.array([pwv_value[0], pwv_value[2], pwv_value[3], pwv_value[4]])
         pwv_value_gal = np.array([pwv_value[0], pwv_value[1]])
         F_filters = signal_instance.filters
         margin = 10e9
-        F_bins_Lor = np.linspace(F_min - margin,F_max + margin,num_bins_Lor)
+        # F_bins_Lor = np.logspace(np.log10(F_min-margin), np.log10(F_max + margin), num_bins_Lor)
+        F_bins_Lor = np.linspace(F_min-margin, F_max + margin, num_bins_Lor)
 
-        HPBW = use_desim.D2HPBW(F_bins_Lor)
-        eta_mb = self.eta_mb_ruze(F=F_bins_Lor,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+        if D1:
+            instrument_properties = self.instrument_properties_D1
+            theta_maj = 31.4*np.pi/180./60./60.
+            theta_min = 22.8*np.pi/180./60./60.
+            eta_mb = 0.34
+            eta_filter_peak = 0.35 * 0.1
+        else:
+            instrument_properties = self.instrument_properties_D2
+            HPBW = use_desim.D2HPBW(F_bins_Lor)
+            eta_mb = self.eta_mb_ruze(F=F_bins_Lor,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+            theta_maj = HPBW
+            theta_min = HPBW
+            eta_filter_peak = 0.4
         Desim_input_params ={
             'eta_atm_df': eta_atm_df,
             'F_highres': F_highres,
@@ -88,22 +114,21 @@ class use_desim(object):
             'F' : F_bins_Lor,
             'pwv':pwv_values_no_gal,
             'EL':EL,
-            'R' : R,
-            'theta_maj' : HPBW,
-            'theta_min' : HPBW,
+            # 'R' : R,
+            'theta_maj' : theta_maj,
+            'theta_min' : theta_min,
             'eta_mb' : eta_mb,
             'psd_gal': psd_gal,
             'inclGal': 0
         }
-        Desim_input = dict(self.instrument_properties, **Desim_input_params)
+        Desim_input = dict(instrument_properties, **Desim_input_params)
         DESHIMA_transmitted_no_gal = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
         Desim_input_params['pwv'] = pwv_value_gal
         Desim_input_params['inclGal'] = 1
-        Desim_input = dict(self.instrument_properties, **Desim_input_params)
+        Desim_input = dict(instrument_properties, **Desim_input_params)
         DESHIMA_transmitted_gal = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
         psd_co_no_gal = DESHIMA_transmitted_no_gal['psd_co'] #vector because of F
         psd_co_gal = DESHIMA_transmitted_gal['psd_co']
-        # print('psd_co_gal', psd_co_gal.shape)
         psd_co = np.zeros([num_bins_Lor, 5])
         for i in range(0, 4):
             if i == 0:
@@ -112,17 +137,9 @@ class use_desim(object):
                 psd_co[:, i + 1] = psd_co_no_gal[:, i]
         psd_co[:, 1] = psd_co_gal[:, 1]
         psd_jn_chip = DESHIMA_transmitted_no_gal['psd_jn_chip']
-        # print('psd_jn_chip',  DESHIMA_transmitted_no_gal['psd_jn_chip'].shape)
-
         F_bins_Lor_mesh, F_filters_mesh = np.meshgrid(F_bins_Lor, F_filters)
-
-        #cython
-        # psd_KID = Lorentzian.filter_response_function(F_bins_Lor_mesh, F_filters_mesh, R, eta_lens_antenna_rad, eta_circuit, psd_co, psd_jn_chip)
-
-        # not cython
-        eta_circuit = use_desim.calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R) * math.pi * F_filters_mesh/(2 * R) * self.instrument_properties['eta_circuit']
-        eta_chip = self.instrument_properties['eta_lens_antenna_rad'] * eta_circuit
-
+        eta_circuit = use_desim.calcLorentzian(F_bins_Lor_mesh, F_filters_mesh, R) * math.pi * F_filters_mesh/(2 * R) * eta_filter_peak
+        eta_chip = instrument_properties['eta_lens_antenna_rad'] * eta_circuit
         # calculate psd_KID with different values for pwv
         psd_medium = np.transpose((1-eta_chip)*np.transpose(np.array(psd_jn_chip)))
         psd_KID = np.zeros([psd_co.shape[1], num_filters, num_bins_Lor])
@@ -132,39 +149,21 @@ class use_desim(object):
             psd_KID_in_i = eta_chip_i*psd_co_i
             result = psd_KID_in_i + psd_medium[i, :]
             psd_KID[:, :, i] = result
-
         return DESHIMA_transmitted_no_gal, F_bins_Lor, psd_KID, F_filters
 
 ##------------------------------------------------------------------------------
-## Everything under this is not used in the model, only for making plots
+## Everything under this is not used in the model, only for making the interpolation curves and plotting
 ##------------------------------------------------------------------------------
 
-    def get_eta_atm(F, pwv, EL):
-        data_names = ['eta_atm']
-        eta_atm = np.zeros(len(F))
-        for i in range(0, len(F)):
-            input = {
-            'F': F[i],
-            'pwv': pwv,
-            'EL': EL,
-            'data_names': data_names
-            }
-            eta_atm[i] = obt_data(input)[0]
-        return eta_atm
-
-    def obt_data(self, input):
+    def obt_data(self, input, D1):
         F = input['F']
         data_names = input['data_names']
         # del(input['data_names'])
-        HPBW = use_desim.D2HPBW(F)
-        eta_mb = self.eta_mb_ruze(F=F,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
-        sensitivity_params ={
-            'R' : 0,
-            'theta_maj' : HPBW,
-            'theta_min' : HPBW,
-            'eta_mb' : eta_mb,
-        }
-        sensitivity_input = dict(self.instrument_properties, **input, **sensitivity_params)
+        if D1:
+            instrument_properties = self.instrument_properties_D1
+        else:
+            instrument_properties = self.instrument_properties_D2
+        sensitivity_input = dict(instrument_properties, **input)
         del(sensitivity_input['data_names'])
         D2goal = dsm.spectrometer_sensitivity(**sensitivity_input) # takes a lot of time
         data = []
@@ -172,62 +171,93 @@ class use_desim(object):
             data.append(np.array(D2goal[el]))
         return data
 
-    def calcT_psd_P(self, eta_atm_df, F_highres, eta_atm_func_zenith, F_filter, EL_vector, num_filters, pwv = 0.1, R = 500, progressbar = None):
-        length_F_vector = 1000 #number of bins to calculate the Lorentzian
+    def calcT_psd_P(self, eta_atm_df, F_highres, eta_atm_func_zenith, F_filter, EL_vector, num_filters, pwv = 0.1, R = 500, num_bins = 1500, progressbar = None, D1 = 0):
         length_EL_vector = len(EL_vector)
-
-        # F_filter = np.linspace(F1, F2, num_filters) #center frequencies of filters
-        F = np.linspace(F_filter[0]/2, F_filter[-1]*1.5, length_F_vector) #to calculate the Lorentzian
-
+        margin = 10e9
+        # F_bins = np.logspace(np.log10(F_filter[0]-margin), np.log10(F_filter[-1] + margin), num_bins) #to calculate the Lorentzian
+        F_bins = np.linspace(F_filter[0] - margin, F_filter[-1] + margin, num_bins)
+        if D1:
+            instrument_properties = self.instrument_properties_D1
+            theta_maj = 31.4*np.pi/180./60./60. * np.ones(num_bins)
+            theta_min = 22.8*np.pi/180./60./60. * np.ones(num_bins)
+            eta_mb = 0.34 * np.ones(num_bins)
+            eta_filter_peak = 0.35 * 0.1
+        else:
+            instrument_properties = self.instrument_properties_D2
+            eta_mb = self.eta_mb_ruze(F=F_bins,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+            HPBW = use_desim.D2HPBW(F_bins)
+            theta_maj = HPBW
+            theta_min = HPBW
+            eta_filter_peak = 0.4
         # Initializing variables
-        psd_KID = np.zeros([num_filters, length_F_vector, length_EL_vector])
+        psd_KID = np.zeros([num_filters, num_bins, length_EL_vector])
         Tb_sky = np.zeros([num_filters, length_EL_vector])
         Pkid = np.zeros([num_filters, length_EL_vector])
-        psd_co = np.zeros([length_F_vector, length_EL_vector])
-        psd_jn_chip = np.zeros([length_F_vector, length_EL_vector])
-        eta_circuit = np.zeros(length_F_vector)
+        psd_co = np.zeros([num_bins, length_EL_vector])
+        psd_jn_chip = np.zeros([num_bins, length_EL_vector])
+        eta_circuit = np.zeros(num_bins)
 
         # Obtain psd_co and psd_jn_chip from desim
-        for j in range(0, length_F_vector):
+        for j in range(0, num_bins):
             input = {
-            'F': F[j],
+            'F': F_bins[j],
             'pwv': pwv,
             'EL': EL_vector,
             'data_names': ['psd_co', 'psd_jn_chip'],
             'eta_atm_df': eta_atm_df,
             'F_highres': F_highres,
-            'eta_atm_func_zenith': eta_atm_func_zenith
+            'eta_atm_func_zenith': eta_atm_func_zenith,
+            'theta_maj' : theta_maj[j],
+            'theta_min' : theta_min[j],
+            'eta_mb' : eta_mb[j]
             }
-            [psd_co[j, :], psd_jn_chip[j, :]] = self.obt_data(input)
+            [psd_co[j, :], psd_jn_chip[j, :]] = self.obt_data(input, D1)
             if progressbar:
                 progressbar.next()
 
         # Obtain psd_kid
         for i in range(0, num_filters):
             # Putting a Lorentzian curve with peak height 0.35 and center frequency F_filter[i] in eta_circuit
-            eta_circuit = use_desim.calcLorentzian(F, F_filter[i], R) * math.pi * F_filter[i]/(2 * R) * 0.35
-            eta_chip = self.instrument_properties['eta_lens_antenna_rad'] * eta_circuit
+            eta_circuit = use_desim.calcLorentzian(F_bins, F_filter[i], R) * math.pi * F_filter[i]/(2 * R) * eta_filter_peak
+            eta_chip = instrument_properties['eta_lens_antenna_rad'] * eta_circuit
             eta_chip_matrix = np.tile(eta_chip.reshape(len(eta_chip), 1), (1, length_EL_vector))
             psd_KID[i, :, :] =  dsm.rad_trans(psd_co, psd_jn_chip, eta_chip_matrix)
             if progressbar:
                 progressbar.next()
 
-        # Obtain Tb_sky
+        delta_F = F_bins[1] - F_bins[0]
+        numerators = np.zeros([EL_vector.shape[0], num_filters])
+        denominators = np.zeros(num_filters)
         for k in range(0, num_filters):
+            transmission = use_desim.calcLorentzian(F_bins, F_filter[k], R)
+            transmission = transmission.reshape([transmission.shape[0], 1])
+            numerators[:, k] =  delta_F * np.sum(transmission \
+            * dsm.eta_atm_func(F=F_bins, pwv=pwv, EL=EL_vector, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith), axis = 0)
+            denominators[k] = delta_F * np.sum(transmission) # delta_F taken out of sum because it is the same for each bin
+        eta_atm_matrix = np.transpose(numerators/denominators)
+
+        if D1 == 0:
+            eta_mb = self.eta_mb_ruze(F=F_filter,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+            HPBW = use_desim.D2HPBW(F_filter)
+            theta_maj = HPBW
+            theta_min = HPBW
+        # Obtain Tb_sky
+        for l in range(0, num_filters):
             input = {
-            'F': F_filter[k],
+            'F': F_filter[l],
             'pwv': pwv,
             'EL': EL_vector,
             'data_names': ['Tb_sky'],
             'eta_atm_df': eta_atm_df,
             'F_highres': F_highres,
-            'eta_atm_func_zenith': eta_atm_func_zenith
+            'eta_atm_func_zenith': eta_atm_func_zenith,
+            'eta_atm_smeared': eta_atm_matrix[l, :],
+            'theta_maj' : theta_maj[l],
+            'theta_min' : theta_min[l],
+            'eta_mb' : eta_mb[l]
             }
-            # Tb_sky_part = self.obt_data(input)
-            # print('Tb_sky_part', Tb_sky_part[0].shape)
-            # print('Tb_sky', Tb_sky[k, :].shape)
-            Tb_sky[k, :]  = self.obt_data(input)[0]
+            Tb_sky[l, :]  = self.obt_data(input, D1)[0]
             if progressbar:
                 progressbar.next()
 
-        return Tb_sky, psd_KID
+        return Tb_sky, psd_KID, F_bins

@@ -1,4 +1,11 @@
 /Data/output_ARIS/*
+/Data/Animations/frames
+/Data/output_DESHIMA_model
+/Data/Temp
+/Data/Tb_sky
+/Data/F
+/Data/eta_atm
+/Data/Test
 /Data/ATMOSPHERE_STRIPS.zip
 /Data/output_ARIS-20200121.zip
 __pycache__

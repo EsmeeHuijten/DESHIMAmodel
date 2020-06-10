@@ -105,30 +105,20 @@ class use_ARIS(object):
         print('Number of atmosphere strips loaded: ', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
-            d = np.loadtxt(self.pathname + filename, delimiter=',')
-            # print(len(d))
-            # print('dimensions atmosphere strips')
+            d = np.loadtxt(self.pathname + filename, delimiter=',', skiprows = 18)
             if i == 0:
                 nx = int(max(d[:, 0])) + 1
                 ny = int(max(d[:, 1])) + 1
-            # print('x: ', nx)
-            # print('y: ', ny)
+                # print('nx: ', nx)
+                # print('ny: ', ny)
             epl= np.zeros([nx,ny])
-            # print(epl.shape)
             for j in range(len(d)):
                 epl[int(d[j, 0])-int(d[0, 0]), int(d[j, 1])] = int(d[j, 2])
-            # print(i)
             if i == 0:
                 self.dEPL_matrix = epl[:, 0:30]
-                # print('intermediate size EPL', self.dEPL_matrix.shape)
-                # self.dEPL_matrix = epl
             else:
                 self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:30]), axis = 0)
-                # print('intermediate size EPL', self.dEPL_matrix.shape)
-        # print(self.dEPL_matrix[0:160, 0:160])
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
-        # e_matrix = self.calc_e_from_EPL(self.dEPL_matrix*1e-3)
-        # self.pwv_matrix = self.interp_e(e_matrix)*1e3 #in mm
         self.pwv_matrix = np.array(self.pwv_matrix)
 
     def obt_pwv(self, time, count, windspeed):

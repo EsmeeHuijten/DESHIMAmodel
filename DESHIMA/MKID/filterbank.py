@@ -15,8 +15,9 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Slider
 from matplotlib import rc
 import matplotlib.pyplot as plt
-plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
-rc('text', usetex=True)
+# plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
+plt.rcParams['animation.ffmpeg_path'] = 'C:/Users/sup-ehuijten/Downloads/FFmpeg/bin/ffmpeg.exe'
+# rc('text', usetex=True)
 
 import numpy as np
 
@@ -27,7 +28,7 @@ import use_desim
 sys.path.insert(1, '../desim')
 import minidesim as dsm
 sys.path.insert(1, r'../../Animation/')
-# import SubplotAnimationTime as aniT
+import SubplotAnimationTime as aniT
 # import SubplotAnimationSlider as aniS
 # plt.style.use('dark_background')
 
@@ -51,20 +52,18 @@ class filterbank(object):
         Unit: -
     """
 
-    def __init__(self, F_min, R, F_max = None, num_filters = 1):
+    def __init__(self, F_min, R, num_filters = 1, f_spacing = 380, num_bins = 1500, D1 = 0):
         self.F_min = F_min
-        if F_max == None:
-            self.F_max = F_min
-        else:
-            self.F_max = F_max
         self.F0 = F_min
         self.R = R
         self.num_filters = num_filters
-        F = np.zeros(self.num_filters)
-        for i in range(self.num_filters):
-            F[i] = self.F_min * (1 + 1/self.R)**i
+        self.f_spacing = f_spacing
+        self.num_bins = num_bins
+        self.F_max = F_min * (1 + 1/f_spacing)**(num_filters - 1)
+        F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), num_filters)
         self.filters = F
         self.FWHM = self.filters/R
+        self.D1 = D1
         self.path_model = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
     def calcLorentzian(self, x_array):
@@ -98,10 +97,10 @@ class filterbank(object):
         num_bins = 500
         x_plot = np.linspace(self.F0 - 1/2 * x_width, self.F0 + 1/2 * x_width, num_bins)
         y_plot = self.calcLorentzian(x_plot)
-        plt.plot(x_plot, y_plot)
+        plt.plot(x_plot, y_plot, 'g')
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Response')
-        plt.title('Lorenzian curve with a peak at '+ str(self.F0 * 1e-9) + ' GHz')
+        plt.title('Lorentzian curve with a peak at '+ str(self.F0 * 1e-9) + ' GHz')
         plt.show()
 
     def getPoints_etaF_curve(self, pwv, EL):
@@ -126,7 +125,7 @@ class filterbank(object):
             values of pwv and EL
             Unit: -
         """
-        eta_atm = use_desim.get_eta_atm(self.filters, pwv, EL)
+        eta_atm = dsm.eta_atm_func(self.filters, pwv, EL)
         return eta_atm
 
     def getPoints_TP_curve(self, EL_vector, pwv, progressbar):
@@ -159,9 +158,12 @@ class filterbank(object):
         use_desim_instance = use_desim.use_desim()
         self.eta_atm_df, self.F_highres = dsm.load_eta_atm()
         self.eta_atm_func_zenith = dsm.eta_atm_interp(self.eta_atm_df)
-        Tb_sky, psd_KID_desim = use_desim_instance.calcT_psd_P(self.eta_atm_df, self.F_highres, self.eta_atm_func_zenith, self.filters, EL_vector, self.num_filters, pwv, self.R, progressbar)
-        delta_F = self.filters/self.R
-        delta_F = delta_F.reshape([delta_F.shape[0], 1])
+        Tb_sky, psd_KID_desim, F_bins = use_desim_instance.calcT_psd_P(self.eta_atm_df, self.F_highres, self.eta_atm_func_zenith, self.filters, EL_vector, self.num_filters, pwv, self.R, self.num_bins, progressbar, self.D1)
+        first_dif = F_bins[1] - F_bins[0]
+        last_dif = F_bins[-1] - F_bins[-2]
+        # delta_F = np.concatenate((np.array([0.]), np.logspace(np.log10(first_dif), np.log10(last_dif), self.num_bins-1)))
+        # delta_F = delta_F.reshape([1, delta_F.shape[0]])
+        delta_F = first_dif
         Pkid = np.zeros(psd_KID_desim.shape)
         for i in range(psd_KID_desim.shape[2]):
             Pkid[:, :, i] = psd_KID_desim[:, :, i] * delta_F
@@ -182,8 +184,12 @@ class filterbank(object):
             # + str(pwv_vector[i]) + ".txt"
             # filename_Tb_sky = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Tb_sky/Tb_sky_for_pwv_" \
             # + str(pwv_vector[i]) + ".txt"
-            filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '.txt'
-            filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + ".txt"
+            if self.D1:
+                filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '_D1.txt'
+                filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + "_D1.txt"
+            else:
+                filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '.txt'
+                filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + ".txt"
             np.savetxt(filename_Pkid, Pkid)
             np.savetxt(filename_Tb_sky, Tb_sky)
             Pkid = 0; Tb_sky = 0
@@ -198,7 +204,7 @@ class filterbank(object):
             eta_atm[k, :] = self.getPoints_etaF_curve(pwv_vector[k], EL)
         # filename_eta_atm = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/eta_atm/eta_atm.txt"
         # filename_F= "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/F/F.txt"
-        filename_eta_atm = self.path_model + 'Data/eta_atm/eta_atm.txt'
+        filename_eta_atm = self.path_model + '/Data/eta_atm/eta_atm.txt'
         filename_F = self.path_model + '/Data/F/F.txt'
         np.savetxt(filename_eta_atm, eta_atm)
         np.savetxt(filename_F, self.filters)
@@ -211,8 +217,12 @@ class filterbank(object):
         Pkid = np.zeros([len(pwv_vector), len(self.filters), length_EL_vector])
         Tb_sky = np.zeros([len(pwv_vector), len(self.filters), length_EL_vector])
         for i in range(0, len(pwv_vector)):
-            filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '.txt'
-            filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + ".txt"
+            if self.D1:
+                filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '_D1.txt'
+                filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + "_D1.txt"
+            else:
+                filename_Pkid = self.path_model + '/Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '.txt'
+                filename_Tb_sky = self.path_model + '/Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + ".txt"
             Pkid[i, :, :] = np.loadtxt(filename_Pkid)
             Tb_sky[i, :, :] = np.loadtxt(filename_Tb_sky)
             # Pkid[i, :, :] = np.loadtxt("C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Pkid/Pkid_for_pwv_" \
@@ -225,7 +235,7 @@ class filterbank(object):
         """
         Saves values of the atmospheric transmission eta_atm, that are obtained by the 'save_etaF_data' method.
         """
-        filename_eta_atm = self.path_model + 'Data/eta_atm/eta_atm.txt'
+        filename_eta_atm = self.path_model + '/Data/eta_atm/eta_atm.txt'
         filename_F = self.path_model + '/Data/F/F.txt'
         eta_atm = np.loadtxt(filename_eta_atm)
         F = np.loadtxt(filename_F)
@@ -247,7 +257,9 @@ class filterbank(object):
         SubplotAnimation_1 = aniT.SubplotAnimationTime(F_vector, eta_atm, Pkid, Tb_sky, pwv_vector)
 
         Writer = animation.FFMpegWriter(fps=10, metadata=dict(artist='Me'), bitrate=1000)
-        file_string = r'C:/Users/Esmee/Documents/BEP/DESHIMA/Animations/animation_tryout.mp4'
+        # file_string = r'C:/Users/Esmee/Documents/BEP/DESHIMA/Animations/animation_tryout.mp4'
+        file_string = self.path_model + '/Data/Animations/animation_tryout.mp4'
+        print('file_string', file_string)
         SubplotAnimation_1.save(file_string, writer=Writer)
         plt.show()
 
@@ -290,17 +302,20 @@ class filterbank(object):
             split_Pkid = tuple(np.vsplit(Pkid[:, j, :], len(Pkid[:, 0])))
             Pkid_vector = np.hstack(split_Pkid)
             # if j in peak_indices:
+            EL_vector_long = EL_vector_long.reshape([1, EL_vector_long.size])
             f = interpolate.SmoothBivariateSpline(EL_vector_long, Pkid_vector, \
             Tb_sky_vector, s = len(EL_vector_long))
-            f_pwv = interpolate.SmoothBivariateSpline(Pkid_vector, EL_vector_long, \
-            pwv_vector_long, s = len(Pkid_vector), kx = 3, ky = 3)
-            # knots = 2
-            # f_pwv = interpolate.LSQBivariateSpline(Pkid_vector, EL_vector_long, \
-            # pwv_vector_long, tx = np.linspace(0, 1e-12, knots), ty = np.linspace(20., 90., knots), kx = 1, ky = 1)
-            name = self.path_model + '\Data\splines_Tb_sky\spline_' + '%.1f' % (self.filters[j]/1e9) +'GHz'
-            name_pwv = self.path_model + '\Data\splines_pwv\spline_' + '%.1f' % (self.filters[j]/1e9) +'GHz'
+            # f_pwv = interpolate.SmoothBivariateSpline(Pkid_vector, EL_vector_long, \
+            # pwv_vector_long, s = len(Pkid_vector), kx = 3, ky = 3)
+            if self.D1:
+                name = self.path_model + '\Data\splines_Tb_sky\spline_' + '%.1f' % (self.filters[j]/1e9) +'GHz_D1'
+            else:
+                name = self.path_model + '\Data\splines_Tb_sky\spline_' + '%.1f' % (self.filters[j]/1e9) +'GHz'
+            # name_pwv = self.path_model + '\Data\splines_pwv\spline_' + '%.1f' % (self.filters[j]/1e9) +'GHz_D1'
             np.save(name, np.array(f))
-            np.save(name_pwv, np.array(f_pwv))
+
+            f_load = np.load(name + '.npy', allow_pickle= True)
+            f_function = f_load.item()
         return 0
 
     def check_pwv(self, EL, Pkid):
@@ -316,15 +331,44 @@ class filterbank(object):
         plt.ylabel('Precipitable water vapor (mm)')
         plt.show()
 
-num_filters = 347
-F_min = 220e9
-R = 500
-length_EL_vector = 25
-EL_vector = np.linspace(20., 90., length_EL_vector)
-filterbank_1 = filterbank(F_min, R, 440e9, num_filters)
-pwv_vector = np.logspace(-1, 0.35, 25)
-filterbank_1.fit_TPpwvEL_curve(pwv_vector, EL_vector)
-filterbank_1.save_TP_data(EL_vector, pwv_vector)
+# length_EL_vector = 25
+# length_pwv_vector = 25
+
+# test one value
+# pwv_vector = np.logspace(0., 0., length_pwv_vector)
+# EL_vector = np.linspace(60., 60., length_EL_vector)
+
+# make interpolation curves
+# pwv_vector = np.logspace(-1, 0.35, length_pwv_vector)
+# EL_vector = np.linspace(20., 90., length_EL_vector)
+
+# DESHIMA 2.0
+# D1 = 0
+# num_filters = 347
+# F_min = 220e9
+# R = 500
+# f_spacing = 500
+# num_bins = 1500
+# filterbank_D2 = filterbank(F_min, R, num_filters, f_spacing, num_bins, D1)
+# filterbank_D2.save_TP_data(EL_vector, pwv_vector)
+# filterbank_D2.fit_TPpwvEL_curve(pwv_vector, EL_vector)
+# filterbank_D2.save_etaF_data(pwv_vector, 90.)
+# filterbank_D2.make_animation(pwv_vector, EL_vector)
+
+# DESHIMA 1.0
+# D1 = 1
+# num_filters_D1 = 49
+# F_min_D1 = 332e9
+# R_D1 = 300
+# f_spacing_D1 = 380
+# num_bins_D1 = 1500
+# filterbank_D1 = filterbank(F_min_D1, R_D1, num_filters_D1, f_spacing_D1, num_bins_D1, D1)
+# filterbank_D1.save_TP_data(EL_vector, pwv_vector)
+# filterbank_D1.fit_TPpwvEL_curve(pwv_vector, EL_vector)
+
+# draw Lorentzian curve
+# Lor_filterbank = filterbank(300e9, 500, 300e9, 1, 0)
+# Lor_filterbank.drawLorentzian(30e9)
 
 ##------------------------------------------------------------------------------
 ## Code that might be useful later

@@ -38,10 +38,11 @@ def spectrometer_sensitivity(
         eta_atm_df: pd.Series([]),
         F_highres: pd.Series([]),
         eta_atm_func_zenith: pd.Series([]),
+        eta_atm_smeared=0,
         F=350.*10.**9.,  # Hz, scalar or vector
         pwv=0.5,  # mm, scalar
         EL=60.,  # deg, scalar
-        R=500,  # scalar. R = Q = F/FWHM = F/dF is assumed.
+        # R=500,  # scalar. R = Q = F/FWHM = F/dF is assumed.
         eta_M1_spill=0.99,  # scalar or vector
         eta_M2_spill=0.90,  # scalar or vector
         eta_wo_spill=0.99,  # scalar or vector. product of cabin spillover loss
@@ -55,7 +56,7 @@ def spectrometer_sensitivity(
         eta_lens_antenna_rad=0.81,
         # scalar or vector. 'Alejandro Efficiency',
         # from the feedpoint of the antenna to being absorbed in the KID.
-        eta_circuit=0.35,
+        # eta_circuit=0.35,
         eta_IBF=0.6,
         KID_excess_noise_factor = 1.1,
         theta_maj=22. * np.pi / 180. / 60. / 60.,  # scalar or vector.
@@ -195,8 +196,8 @@ def spectrometer_sensitivity(
     eta_atm : atmospheric transmission. Unit: None
     R : same as input
     Tb_sky : Planck brightness temperature of the sky. Units : K
-    psd_co: Johnson-Nyquist power spectral density of the cold-optics temperature.. Units: W/Hz
-    psd_jn_chip: Johnson-Nyquist power spectral density of . Units: W/Hz
+    psd_co: Johnson-Nyquist power spectral density of the cold-optics temperature. Units: W/Hz
+    psd_jn_chip: Johnson-Nyquist power spectral density of the chip. Units: W/Hz
     psd_KID: Johnson-Nyquist power spectral density of the KID (Kinetic Inductance Detector). Units: W/Hz
 
     Note
@@ -204,11 +205,6 @@ def spectrometer_sensitivity(
     - The parameters to calculate the window transmission / reflection
     is hard-coded in the function window_trans().
     """
-
-    # Equivalent Bandwidth of 1 channel.
-    # W_F_cont = F/R/eta_IBF # Used for calculating loading and coupling to a continuum source
-    # W_F_spec = F/R # Used for calculating coupling to a line source, with a linewidth not wider than the filter channel
-
     # #############################################################
     # 1. Calculating loading power absorbed by the KID, and the NEP
     # #############################################################
@@ -227,10 +223,14 @@ def spectrometer_sensitivity(
     # Collect efficiencies at the same temperature
     eta_M1 = eta_M1_ohmic * eta_M1_spill
     eta_wo = eta_Al_ohmic**n_wo_mirrors * eta_wo_spill
-    eta_chip = eta_lens_antenna_rad * eta_circuit
+    # eta_chip = eta_lens_antenna_rad * eta_circuit
 
-    # Calcuate eta. scalar/vector depending on F.
-    eta_atm = eta_atm_func(F=F, pwv=pwv, EL=EL, R=R, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith)
+    if type(eta_atm_smeared) == int:
+        # Calcuate eta. scalar/vector depending on F.
+        eta_atm = eta_atm_func(F=F, pwv=pwv, EL=EL, eta_atm_df=eta_atm_df, F_highres=F_highres, eta_atm_func_zenith=eta_atm_func_zenith)
+    else:
+        eta_atm = eta_atm_smeared
+
     # Johnson-Nyquist Power Spectral Density (W/Hz) for the physical temperatures of each stage
     if inclGal == 1:
         psd_jn_cmb_and_gal   = johnson_nyquist_psd(F=F, T=Tb_cmb) + psd_gal
@@ -250,10 +250,10 @@ def spectrometer_sensitivity(
     psd_jn_chip  = johnson_nyquist_psd(F=F, T=Tp_chip)
     if type(psd_jn_chip) != np.float64:
         psd_jn_chip = psd_jn_chip.reshape([psd_jn_chip.shape[0], 1])
+
     # Optical Chain
     # Sequentially calculate the Power Spectral Density (W/Hz) at each stage.
     # Uses only basic radiation transfer: rad_out = eta*rad_in + (1-eta)*medium
-
     psd_sky =       rad_trans(rad_in=psd_jn_cmb_and_gal,   medium=psd_jn_amb,     eta=eta_atm     )
     psd_M1  =       rad_trans(rad_in=psd_sky,      medium=psd_jn_amb,     eta=eta_M1      )
     psd_M2_spill =  rad_trans(rad_in=psd_M1,       medium=psd_sky,        eta=eta_M2_spill) # Note that the spillover of M2 is to the
@@ -262,17 +262,8 @@ def spectrometer_sensitivity(
     [psd_window, eta_window] = (
                     window_trans(F=F, psd_in=psd_wo, psd_cabin=psd_jn_cabin, psd_co=psd_jn_co, window_AR=window_AR))
     psd_co =        rad_trans(rad_in=psd_window,   medium=psd_jn_co,      eta=eta_co      )
-    psd_KID =       rad_trans(rad_in=psd_co,       medium=psd_jn_chip,    eta=eta_chip    )  # PSD absorbed by KID
+    # psd_KID =       rad_trans(rad_in=psd_co,       medium=psd_jn_chip,    eta=eta_chip    )  # PSD absorbed by KID
 
-    #
-    # # Loadig power absorbed by the KID
-    # # .............................................
-    W_F_cont = F/500/eta_IBF # hardcoded with R = 500
-    if type(W_F_cont) != np.float64:
-        W_F_cont = W_F_cont.reshape([W_F_cont.shape[0], 1])
-    # print('psd_KID', psd_KID.shape)
-    # print('W_F_cont', W_F_cont.shape)
-    Pkid = psd_KID * W_F_cont
     Tb_sky = T_from_psd(F, psd_sky)
 
     # ############################################
@@ -284,18 +275,15 @@ def spectrometer_sensitivity(
         'eta_atm': eta_atm,
         'psd_co': psd_co,
         'psd_jn_chip': psd_jn_chip,
-        'psd_KID': psd_KID,
+        # 'psd_KID': psd_KID,
         'Tb_sky': Tb_sky
     }
-    # Turn Scalar values into vectors
-    # result = result.fillna(method='ffill')
-
     return result
 
 def calc_eff_aper(F, beam_radius):
     # Galaxy spectrum
     c = 299792458.
-    eta_mb = eta_mb_ruze(F=F,LFlimit=0.805,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+    eta_mb = eta_mb_ruze(F=F,LFlimit=0.8,sigma=37e-6) * 0.9 # expects F in Hz, see specs, 0.9 is from EM, ruze is from ASTE
     theta_maj = D2HPBW(F)
     theta_min = D2HPBW(F)
     Ag = np.pi * (beam_radius)**2.  # Geometric area of the telescope
@@ -305,6 +293,7 @@ def calc_eff_aper(F, beam_radius):
     return Ae
 
 def D2HPBW(F):
+    # F is passed on in Hz, transferred to GHz in this function
     HPBW = 29.*240./(F/1e9) * np.pi / 180. / 60. / 60.
     return HPBW
 
@@ -325,7 +314,7 @@ def load_eta_atm():
     F_highres = eta_atm_df['F']
     return eta_atm_df, F_highres
 
-def eta_atm_func(F, pwv, EL=60., R=0, eta_atm_df = pd.Series([]), F_highres = pd.Series([]), eta_atm_func_zenith = pd.Series([])):
+def eta_atm_func(F, pwv, EL=60., eta_atm_df = pd.Series([]), F_highres = pd.Series([]), eta_atm_func_zenith = pd.Series([])):
     """
     Calculate eta_atm as a function of F by interpolation.
     If R~=0 then the function will average the atmospheric transmission
@@ -366,6 +355,7 @@ def eta_atm_func(F, pwv, EL=60., R=0, eta_atm_df = pd.Series([]), F_highres = pd
         eta_atm_df, F_highres = load_eta_atm()
     if type(eta_atm_func_zenith) != interp2d:
         eta_atm_func_zenith = eta_atm_interp(eta_atm_df)
+    pwv = np.squeeze(pwv)
     eta_atm = np.abs(eta_atm_func_zenith(pwv, F)) ** (1./np.sin(EL*np.pi/180.))
     return np.squeeze(eta_atm)
 
@@ -627,7 +617,7 @@ def MDLF_simple(
     F = np.linspace(Fmin, Fmax, (Fmax - Fmin)*10 + 1)*1e9
 
     # Main beam efficiency of ASTE
-    eta_mb = eta_mb_ruze(F=F,LFlimit=0.805,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
+    eta_mb = eta_mb_ruze(F=F,LFlimit=0.8,sigma=37e-6) * 0.9 # see specs, 0.9 is from EM, ruze is from ASTE
 
     D2goal_input ={
         'F' : F, # Frequency in GHz

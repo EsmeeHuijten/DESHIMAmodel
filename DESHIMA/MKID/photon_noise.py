@@ -5,9 +5,6 @@ import scipy.special
 
 import sys
 sys.path.append('./DESHIMA/MKID/')
-# for cython
-# import pyximport; pyximport.install()
-# import timeSigBoost
 
 class photon_noise(object):
     """
@@ -35,11 +32,10 @@ class photon_noise(object):
     delta_Al = 188e-6 * 1.602e-19
     eta = 0.4
 
-    def __init__(self, power, frequency, sampling_rate, spec_res):
+    def __init__(self, power, frequency, delta_F, sampling_rate):
         self.power = power
         self.frequency = frequency
-        self.spec_res = spec_res
-        self.delta_F = self.frequency/spec_res
+        self.delta_F = delta_F
         self.sampling_rate = sampling_rate
 
     def calcNEPsimple(self):
@@ -141,14 +137,11 @@ class photon_noise(object):
         y_plot: vector
             Power vector with numbers drawn from the Poisson distribution
         """
-        #with cython
-        # return timeSigBoost.calcTimeSigBoost(self.power, self.frequency, self.delta_F, self.sampling_rate, atm)
-
-        # without cython
         std_dev = self.calcNEPboosted() * np.sqrt(0.5*self.sampling_rate)
         if atm:
             delta_y = np.random.normal(0, std_dev, std_dev.shape)
             y = self.power + delta_y
+            # y = self.power # to test without photon noise
             return y
         else:
             mean = self.power
@@ -183,9 +176,3 @@ class photon_noise(object):
         plt.ylabel('Power (W)')
         plt.title('Mock-up time signal of photon noise using the '+ titleString)
         plt.show()
-
-# power = np.random.rand(4, 2, 3)*1e-13
-# frequency = np.linspace(220e9, 440e9, 3)
-# noise_1 = photon_noise(power, frequency, 500)
-# print(noise_1.calcNEPboosted())
-# noise_1.drawTimeSignal(2.0, 1)

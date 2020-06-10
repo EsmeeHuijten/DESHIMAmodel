@@ -36,8 +36,8 @@ class signal_transmitter(object):
         self.input = input
         self.F_min = input['F_min']
         self.num_bins = input['num_bins']
-        self.T = input['T']
         self.spec_res = input['spec_res']
+        self.f_spacing = input['f_spacing']
         self.F0 = input['F_min']
         self.time = input['time']
         self.num_filters = input['num_filters']
@@ -55,98 +55,15 @@ class signal_transmitter(object):
         self.max_num_strips = input['max_num_strips']
         self.save_name_data = input['save_name_data']
         self.pwv_0 = input['pwv_0']
+        self.D1 = input['D1']
+        if self.D1:
+            print('Simulation of DESHIMA 1.0')
+        else:
+            print('Simulation of DESHIMA 2.0')
         self.path_model = os.path.dirname(os.path.abspath(__file__))
-        self.filters = np.zeros(self.num_filters)
-        for i in range(self.num_filters):
-            self.filters[i] = self.F_min * (1 + 1/self.spec_res)**i
-        self.F_max = self.filters[-1]
-
-    def transmit_signal_simple(self):
-        """
-        OUTDATED - Transmits the signal through the most simple version of the
-        DESHIMA model, using a blackbody source instead of the atmosphere and
-        the galaxy. The DESHIMA instrument sensitivity is not included in this
-        estimation and only one filter is simulated. It approximates the filter
-        response with a Gaussian and adds photon noise using a Gaussian
-        estimation of the Poisson distribution.
-        """
-        bb_source = bbs.bb_source(self.F_min, self.F_max, self.num_bins, self.T, self.spec_res)
-        [self.bin_centres, self.P_bin_centres] = bb_source.approx_JN_curve()
-        filterbank = fb.filterbank(self.F0, self.spec_res)
-        self.filter_response = filterbank.calcLorentzian(self.bin_centres)
-
-        self.P_bin_centres = self.P_bin_centres * self.filter_response * math.pi * self.F0 / (2 * self.spec_res)
-        # self.P_total = sum(self.P_bin_centres) * bb_source.bin_width
-        # print(self.P_total)
-        signal_matrix = np.zeros([self.num_bins, int(self.time*self.sampling_rate)])
-        for i in range(0, self.num_bins):
-            noise_signal = pn.photon_noise(self.P_bin_centres[i], self.bin_centres[i], self.sampling_rate, self.spec_res)
-            noise_signal.delta_F = bb_source.bin_width
-            signal_matrix[i, :] = noise_signal.calcTimeSignalBoosted(self.time)[1]
-            if i == 0:
-                frequency_vector = noise_signal.calcTimeSignalBoosted(self.time)[0]
-        power_vector = np.sum(signal_matrix, axis=0)
-        return [frequency_vector, power_vector]
-
-    def transmit_signal_DESIM(self): #is not working atm
-        """
-        OUTDATED - Transmits the signal through the DESHIMA model. The galaxy
-        data and atmosphere are not included in this version of the model and
-        only one filter is simulated. It approximates the filter response with a
-        Gaussian and adds photon noise using a Gaussian estimation of the
-        Poisson distribution.
-        """
-        self.bin_centres, self.psd_bin_centres = use_desim.getpsd_KID()
-        self.P_bin_centres = self.psd_bin_centres * (self.bin_centres[1]-self.bin_centres[0])
-        print(self.bin_centres, self.P_bin_centres)
-        print('total power ' + str((self.bin_centres[1]-self.bin_centres[0]) * np.sum(self.psd_bin_centres)))
-        # plt.plot(self.bin_centres, self.P_bin_centres)
-        # plt.show()
-        self.num_bins = len(self.bin_centres)
-        signal_matrix = np.zeros([self.num_bins, int(self.time*self.sampling_rate)])
-        # print(signal_matrix.size)
-        for i in range(0, self.num_bins):
-            noise_signal = pn.photon_noise(self.P_bin_centres[i], self.bin_centres[i], self.spec_res)
-            noise_signal.delta_F = self.bin_centres[1]-self.bin_centres[0]
-            signal_matrix[i, :] = noise_signal.calcTimeSignalBoosted(self.time)[1]
-            if i == 0:
-                x = noise_signal.calcTimeSignalBoosted(self.time)[0]
-        y = np.sum(signal_matrix, axis=0)
-        return [x, y]
-
-    def transmit_signal_DESIM_multf(self):
-        """
-        OUTDATED - Transmits the signal through the DESHIMA model. The galaxy
-        data and atmosphere are not included in this version of the model, but
-        multiple filteres are simulated. It approximates the filter response with a
-        Gaussian and adds photon noise using a Gaussian estimation of the
-        Poisson distribution.
-        """
-        # Obtain data from DESIM
-        [self.bin_centres, self.psd_bin_centres, filters] = use_desim.transmit_through_DESHIMA(self.F_min, self.F_max, \
-        self.num_bins, self.num_filters, self.spec_res)[1:4] #vector, frequency
-
-        # Calculate the power from psd_KID
-        self.P_bin_centres = self.psd_bin_centres * (self.bin_centres[1]-self.bin_centres[0]) #matrix, power
-
-        # Initialize signal_matrix
-        self.num_filters = len(self.P_bin_centres[:, 0]) # compare to self.num_filters, redundant?
-        self.num_bins = len(self.bin_centres) # compare to self.num_bins, redundant?
-        self.num_samples = int(self.time*self.sampling_rate)
-        signal_matrix = np.zeros([self.num_filters, self.num_bins, self.num_samples])
-        summed_signal_matrix = np.zeros([self.num_filters, self.num_samples])
-        # print(signal_matrix.size)
-        for j in range(0, self.num_filters):
-            for i in range(0, self.num_bins):
-                noise_signal = pn.photon_noise(self.P_bin_centres[j, i], self.bin_centres[i], self.spec_res)
-                noise_signal.delta_F = self.bin_centres[1]-self.bin_centres[0]
-                signal_matrix[j, i, :] = noise_signal.calcTimeSignalBoosted(self.time)[1]
-                if j == 0 and i == 0:
-                    time_vector = noise_signal.calcTimeSignalBoosted(self.time)[0]
-            summed_signal_matrix[j, :] = np.sum(signal_matrix[j, :, :], axis=0)
-            power_matrix = summed_signal_matrix
-
-        return [time_vector, power_matrix, filters] #x is the time, summed_signal_matrix is the power (stochastic signal)
+        self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
+        F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
+        self.filters = F
 
     def save_filtered_pwv_map(self):
         """
@@ -155,15 +72,14 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        # windspeed = self.max_num_strips * self.x_length_strip * self.grid /self.time
         aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
-        return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
         # path = os.path.dirname(os.path.abspath(__file__))
         # relpath = '/Data/output_ARIS/'
         # filename = 'remove_me.txt'
         # np.savetxt(path + relpath + filename, aris_instance.filtered_pwv_matrix)
+        return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
 
     def transmit_signal_DESIM_multf_atm(self):
         """
@@ -200,28 +116,23 @@ class signal_transmitter(object):
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        # if self.windspeed*self.time > self.grid * self.max_num_strips * self.x_length_strip/2:
-        #     # This if statement makes sure the previously made and filtered map is loaded in
-        #     # rather than calculated again
-        #     aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 1)
-        # else:
         aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
+        # aris_instance = 0 # to test without atmosphere fluctuations
 
         self.eta_atm_df, self.F_highres = dsm.load_eta_atm()
         self.eta_atm_func_zenith = dsm.eta_atm_interp(self.eta_atm_df)
 
         #Galaxy
-        self.frequency_gal, spectrum_gal =galaxy.giveSpectrumInclSLs(self.luminosity, self.redshift, linewidth = self.linewidth)
-        Ae = dsm.calc_eff_aper(self.frequency_gal, self.beam_radius)
+        self.frequency_gal, spectrum_gal =galaxy.giveSpectrumInclSLs(self.luminosity, self.redshift, self.F_min/1e9, self.F_max/1e9, self.num_bins, self.linewidth)
+        Ae = dsm.calc_eff_aper(self.frequency_gal*1e9, self.beam_radius) #1e9 added to convert the f to Hz
         self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5
 
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
 
         num_cores = multiprocessing.cpu_count()
-        # print('number of cores', num_cores)
         end_non_parallel = time.time()
         print('Elapsed time non-parallel part: ', end_non_parallel-start_non_parallel)
         print('Going into parallel')
@@ -229,7 +140,7 @@ class signal_transmitter(object):
         path_F = self.path_model + relpath + self.save_name_data + "_F"
         np.save(path_F, np.array(self.filters))
         start = time.time()
-        for l in range(8):
+        for l in range(0, 8, 1):
             step_round = math.floor(self.num_samples/8)
             inputs = range(l * step_round, (l+1) * step_round)
             power_matrix = Parallel(n_jobs=30)(delayed(signal_transmitter.processInput)(i, self, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
@@ -240,12 +151,24 @@ class signal_transmitter(object):
             for k in range(power_matrix[0].shape[0]):
                     T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
             path_T = self.path_model + relpath + self.save_name_data + "_T_" + str(l)
+            # testing the model
+            # if l == 0:
+            #     plt_fil_1 = np.array([5])
+            #     for plt_fil in plt_fil_1:
+            #         plt_fil = int(plt_fil)
+            #         plt.plot(np.linspace(0, power_matrix_res[0, plt_fil, :].size/self.sampling_rate, power_matrix_res[0, plt_fil, :].size), power_matrix_res[0, plt_fil, :]/np.mean(power_matrix_res[0, plt_fil, :]), label = 'Pkid')
+            #         plt.plot(np.linspace(0, T_sky_matrix[0, plt_fil, :].size/self.sampling_rate, T_sky_matrix[0, plt_fil, :].size), T_sky_matrix[0, plt_fil, :]/np.mean(T_sky_matrix[0, plt_fil, :]), label='T_sky interpolation')
+            #         plt.legend()
+            #         plt.title('Filter' + str(plt_fil))
+            #         plt.show()
             np.save(path_T, np.array(T_sky_matrix))
+            path_P = self.path_model + relpath + self.save_name_data + "_P_" + str(l)
+            np.save(path_P, np.array(power_matrix_res))
             del T_sky_matrix, power_matrix, power_matrix_res
             print('Finished round ' + str(l + 1) + ' out of 8')
         end = time.time()
         print('Elapsed time parallel part: ', end - start)
-        return [time_vector, self.filters] #x is the time, power_matrix is a stochastic signal of the power, filters are the frequencies of the filters
+        return [time_vector, self.filters]
 
     def processInput(i, self, aris_instance, use_desim_instance, time_step, count):
         """
@@ -262,15 +185,18 @@ class signal_transmitter(object):
             Unit: W
         """
         pwv_values = aris_instance.obt_pwv(time_step, count, self.windspeed)
-        [self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[1:4]
+        # pwv_values = np.ones([5, 1]) # to test without atmosphere fluctuations
+        [results_desim, self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[0:4]
 
         # Calculate the power from psd_KID
-        self.P_bin_centres = self.psd_bin_centres * (self.bin_centres[1]-self.bin_centres[0]) #matrix, power
-
-        noise_signal = pn.photon_noise(self.P_bin_centres, self.bin_centres, self.sampling_rate, self.spec_res)
+        first_dif = self.bin_centres[1] - self.bin_centres[0]
+        last_dif = self.bin_centres[-1] - self.bin_centres[-2]
+        # delta_F = np.concatenate((np.array([0.]), np.logspace(np.log10(first_dif), np.log10(last_dif), self.num_bins-1)))
+        delta_F = first_dif
+        self.P_bin_centres = self.psd_bin_centres * delta_F #matrix, power
+        noise_signal = pn.photon_noise(self.P_bin_centres, self.bin_centres, delta_F, self.sampling_rate)
         signal_matrix = noise_signal.calcTimeSignalBoosted(atm = 1)
         power_matrix_column = np.sum(signal_matrix, axis=2)
-        # power_matrix_column = np.sum(self.P_bin_centres, axis=2)
         return power_matrix_column
 
     def convert_P_to_Tsky(self, power_matrix, filters):
@@ -289,7 +215,10 @@ class signal_transmitter(object):
         T_sky_matrix = np.zeros(power_matrix.shape)
         for i in range(0, self.num_filters):
             path = os.path.dirname(os.path.abspath(__file__))
-            filename = '/Data/splines_Tb_sky/spline_' + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
+            if self.D1:
+                filename = '/Data/splines_Tb_sky/spline_' + "{0:.1f}".format(filters[i]/1e9) +'GHz_D1.npy'
+            else:
+                filename = '\\Data\\splines_Tb_sky\\spline_' + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
             f_load = np.load(path + filename, allow_pickle= True)
             f_function = f_load.item()
             for j in range(0, power_matrix.shape[1]):
@@ -340,7 +269,6 @@ class signal_transmitter(object):
         print('Standard deviation is ' + str(math.sqrt(np.var(y))))
         plt.plot(x, y)
         plt.ticklabel_format(useOffset=False)
-        # plt.ylim(1.8774e-10, 1.882e-10)
         # ax.get_yaxis().get_major_formatter().set_useOffset(False)
         plt.xlabel('Time (s)')
         plt.ylabel('Power (W)')
