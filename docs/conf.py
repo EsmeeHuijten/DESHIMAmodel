@@ -1,7 +1,8 @@
 # -- Project information -----------------------------------------------------
-project = 'deshima-sensitivity'
-copyright = '2020, Akio Taniguchi'
-author = 'Akio Taniguchi'
+project = 'tiempo_deshima'
+copyright = '2018-2020 DESHIMA software team'
+author = 'Akira Endo'
+release = '0.1.0'
     
 # -- APIDOC location ---------------------------------------------------------
 import os
@@ -22,7 +23,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
-        "github_url": "https://github.com/deshima-dev/deshima-sensitivity/",
+        "github_url": "https://github.com/Stefanie-B/DESHIMAmodel/",
 }
     
 html_static_path = ['_static']
