@@ -143,12 +143,12 @@ dmypy.json
 cython_debug/
 
 # Specific to TiEMPO
-/Data/output_ARIS/*
-/Data/output_DESHIMA_model
-/Data/Tb_sky
-/Data/F
+/tiempo/Data/output_ARIS/*
+/tiempo/Data/output_DESHIMA_model
+/tiempo/Data/Tb_sky
+/tiempo/Data/F
 __pycache__
 /*/__pycache__
 /*/*/__pycache__
+/*/*/*/__pycache__
 parameters.txt
-*.npy
