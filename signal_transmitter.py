@@ -168,11 +168,11 @@ class signal_transmitter(object):
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
 
-        num_cores = multiprocessing.cpu_count()
+        #num_cores = multiprocessing.cpu_count()
         #end_non_parallel = time.time()
         #print('Elapsed time non-parallel part: ', end_non_parallel-start_non_parallel)
         #print('Going into parallel')
-        relpath =  'Data/output_DESHIMA_model'
+        relpath =  'output_TiEMPO'
         #path_F = self.path_model.joinpath(relpath, self.save_name_data + "_F")
         #np.save(path_F, np.array(self.filters))
         #start = time.time()
