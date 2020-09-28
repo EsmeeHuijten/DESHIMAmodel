@@ -9,7 +9,7 @@ import math
 import matplotlib.pyplot as plt
 #from matplotlib.ticker import StrMethodFormatter, NullFormatter
 from joblib import Parallel, delayed
-import multiprocessing
+#import multiprocessing
 import numpy as np
 #import scipy.special
 #import os
