@@ -143,10 +143,10 @@ dmypy.json
 cython_debug/
 
 # Specific to TiEMPO
-/tiempo/Data/output_ARIS/*
-/tiempo/Data/output_DESHIMA_model
-/tiempo/Data/Tb_sky
-/tiempo/Data/F
+/tiempo_deshima/Data/output_ARIS/*
+/tiempo_deshima/Data/output_DESHIMA_model
+/tiempo_deshima/Data/Tb_sky
+/tiempo_deshima/Data/F
 __pycache__
 /*/__pycache__
 /*/*/__pycache__

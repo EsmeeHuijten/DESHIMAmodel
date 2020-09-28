@@ -1,6 +1,7 @@
 ## Overview of the model 
 The image below shows a schematic overview of how the model is built up. 
 ![Overview model](overview_model.png)
+In order to run the model, create a directory ```output_ARIS``` in ```tiempo/Data``` with ARIS files.
 
 ## Output of the model 
 The model outputs the following data: 
