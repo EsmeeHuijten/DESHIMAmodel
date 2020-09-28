@@ -68,6 +68,12 @@ class signal_transmitter(object):
         #    print('Simulation of DESHIMA 2.0')
         #self.path_model = os.path.dirname(os.path.abspath(__file__))
         self.path_model = Path(__file__).parent
+        if input['savefolder'] == None:
+            self.save_path = Path.cwd().joinpath('output_TiEMPO')
+        else:
+            self.save_path = Path(input['savefolder'])
+        if Path.exists(self.save_path) == False:
+            self.save_path.mkdir(parents = True)
         self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
         F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
         self.filters = F
@@ -82,10 +88,6 @@ class signal_transmitter(object):
         aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
-        # path = os.path.dirname(os.path.abspath(__file__))
-        # relpath = '/Data/output_ARIS/'
-        # filename = 'remove_me.txt'
-        # np.savetxt(path + relpath + filename, aris_instance.filtered_pwv_matrix)
         return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
 
     def processInput(self, i, aris_instance, use_desim_instance, time_step, count):
@@ -172,7 +174,7 @@ class signal_transmitter(object):
         #end_non_parallel = time.time()
         #print('Elapsed time non-parallel part: ', end_non_parallel-start_non_parallel)
         #print('Going into parallel')
-        relpath =  'output_TiEMPO'
+        #relpath =  'output_TiEMPO'
         #path_F = self.path_model.joinpath(relpath, self.save_name_data + "_F")
         #np.save(path_F, np.array(self.filters))
         #start = time.time()
@@ -186,19 +188,9 @@ class signal_transmitter(object):
             T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
             for k in range(power_matrix[0].shape[0]):
                     T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
-            path_T = self.path_model.joinpath(relpath,self.save_name_data + "_T_" + str(l))
-            # testing the model
-            # if l == 0:
-            #     plt_fil_1 = np.array([5])
-            #     for plt_fil in plt_fil_1:
-            #         plt_fil = int(plt_fil)
-            #         plt.plot(np.linspace(0, power_matrix_res[0, plt_fil, :].size/self.sampling_rate, power_matrix_res[0, plt_fil, :].size), power_matrix_res[0, plt_fil, :]/np.mean(power_matrix_res[0, plt_fil, :]), label = 'Pkid')
-            #         plt.plot(np.linspace(0, T_sky_matrix[0, plt_fil, :].size/self.sampling_rate, T_sky_matrix[0, plt_fil, :].size), T_sky_matrix[0, plt_fil, :]/np.mean(T_sky_matrix[0, plt_fil, :]), label='T_sky interpolation')
-            #         plt.legend()
-            #         plt.title('Filter' + str(plt_fil))
-            #         plt.show()
+            path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
             np.save(path_T, np.array(T_sky_matrix))
-            path_P = self.path_model.joinpath(relpath, self.save_name_data + "_P_" + str(l))
+            path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
             np.save(path_P, np.array(power_matrix_res))
             del T_sky_matrix, power_matrix, power_matrix_res
             #print('Finished round ' + str(l + 1) + ' out of 8')
@@ -221,7 +213,7 @@ class signal_transmitter(object):
         """
         T_sky_matrix = np.zeros(power_matrix.shape)
         for i in range(0, self.num_filters):
-            path = Path(__file__).parent
+            path = self.path_model
             if self.D1:
                 filename = 'Data/splines_Tb_sky/spline_' + "{0:.1f}".format(filters[i]/1e9) +'GHz_D1.npy'
             else:
