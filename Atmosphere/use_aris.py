@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
 plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scipy import interpolate, optimize
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
+#from scipy import interpolate, optimize
 import os
 import math
 import numpy as np
-import matplotlib.animation as animation
-from matplotlib.transforms import Transform
-from matplotlib.ticker import (
-    AutoLocator, AutoMinorLocator)
+#import matplotlib.animation as animation
+#from matplotlib.transforms import Transform
+#from matplotlib.ticker import (
+#    AutoLocator, AutoMinorLocator)
 
 import sys
 sys.path.insert(1, '../../')
@@ -102,7 +102,7 @@ class use_ARIS(object):
         max_distance = (time*self.windspeed + 2*self.separation)
         max_x_index = math.ceil(max_distance/self.grid)
         num_strips = min(math.ceil(max_x_index/self.x_length_strip), self.max_num_strips)
-        print('Number of atmosphere strips loaded: ', num_strips)
+        #print('Number of atmosphere strips loaded: ', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
             d = np.loadtxt(self.pathname + filename, delimiter=',', skiprows = 18)
@@ -162,7 +162,7 @@ class use_ARIS(object):
 ##------------------------------------------------------------------------------
 ## The methods below are not used in the model atm
 ##------------------------------------------------------------------------------
-
+"""
     def make_image(self):
         fig = plt.figure()
         ax = plt.subplot(111)
@@ -249,7 +249,7 @@ class use_ARIS(object):
         ani.save(file_string, writer=Writer)
         plt.show()
         plt.pause(0.05)
-
+"""
 # ARIS_instance_1 = use_ARIS('ARIS_200427.dat-', 1.0, 0.2, 10, 0, 40)
 # ARIS_instance_1.make_image()
 # filename = "sample00.dat"

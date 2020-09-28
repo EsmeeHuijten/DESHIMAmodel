@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm #colormap
-from mpl_toolkits.mplot3d import Axes3D
-import plotly.graph_objects as go
+#from mpl_toolkits.mplot3d import Axes3D
+#import plotly.graph_objects as go
 from scipy.ndimage.filters import gaussian_filter
 
 class telescope_transmission(object):
