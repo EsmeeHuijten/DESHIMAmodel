@@ -104,7 +104,7 @@ class use_ARIS(object):
         #print('Number of atmosphere strips loaded: ', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
-            d = np.loadtxt(self.sourcepath.joinpath(filename), delimiter=',', skiprows = 18)
+            d = np.loadtxt(self.sourcepath.joinpath(filename), dtype = float, delimiter=',', skiprows = 18)
             if i == 0:
                 nx = int(max(d[:, 0])) + 1
                 ny = int(max(d[:, 1])) + 1

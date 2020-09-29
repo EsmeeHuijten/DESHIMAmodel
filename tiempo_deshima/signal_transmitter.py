@@ -71,14 +71,25 @@ class signal_transmitter(object):
         if input['savefolder'] == None:
             self.save_path = Path.cwd().joinpath('output_TiEMPO')
         else:
+            folder = input['savefolder']
             self.save_path = Path(input['savefolder'])
+            self.savepath = Path.cwd()
+            while folder.startswith('.'):
+                folder = folder.strip('.')
+                folder = folder.strip('/')
+                folder = folder.strip('\\')
+                self.savepath = self.savepath.parent
+            self.savepath = self.savepath.joinpath(folder)
         if Path.exists(self.save_path) == False:
             self.save_path.mkdir(parents = True)
-        self.sourcepath = input('sourcefolder')
-        self.sourcepath.strip('.')
-        self.sourcepath.strip('/')
-        self.sourcepath.strip('\\')
-        self.sourcepath = Path.cwd().joinpath(self.sourcepath)
+        folder = input['sourcefolder']
+        self.sourcepath = Path.cwd()
+        while folder.startswith('.'):
+            folder = folder.strip('.')
+            folder = folder.strip('/')
+            folder = folder.strip('\\')
+            self.sourcepath = self.sourcepath.parent
+        self.sourcepath = self.sourcepath.joinpath(folder)
         self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
         F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
         self.filters = F
@@ -159,7 +170,7 @@ class signal_transmitter(object):
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
+        aris_instance = use_aris.use_ARIS(self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         # aris_instance = 0 # to test without atmosphere fluctuations
