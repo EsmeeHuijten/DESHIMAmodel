@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
-plt.rcParams['animation.ffmpeg_path'] = 'C:/FFmpeg/bin/ffmpeg.exe'
+
 #from mpl_toolkits.axes_grid1 import make_axes_locatable
 #from scipy import interpolate, optimize
-import os
+
 import math
 import numpy as np
 #import matplotlib.animation as animation
@@ -10,9 +9,7 @@ import numpy as np
 #from matplotlib.ticker import (
 #    AutoLocator, AutoMinorLocator)
 
-import sys
-sys.path.insert(1, '../../')
-sys.path.insert(1, '../')
+
 # from Atmosphere_model_Kah_Wuy.aris import load_aris_output
 # import Telescope.telescope_transmission as tt
 
@@ -30,7 +27,7 @@ class use_ARIS(object):
     x_length_strip = 32768
     h = 1000 #m
 
-    def __init__(self, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
+    def __init__(self, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
         #make function to convert EPL to pwv
         # pwv_vector = np.linspace(0, 5e-3, 1000)
         # e_vector = use_ARIS.calc_e_from_pwv(pwv_vector)
@@ -40,11 +37,12 @@ class use_ARIS(object):
         self.grid = grid
         self.windspeed = windspeed
         self.max_num_strips = max_num_strips
-        self.path_model = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if __name__ == "__main__":
-            self.pathname = "../Data/output_ARIS/"
-        else:
-            self.pathname = self.path_model + '/Data/output_ARIS/'
+        #self.path_model = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        #if __name__ == "__main__":
+        #    self.pathname = "../Data/output_ARIS/"
+        #else:
+        #    self.pathname = self.path_model + '/Data/output_ARIS/'
+        self.sourcepath = sourcepath
         self.filtered_pwv_matrix = "None"
         if loadCompletePwvMap:
             self.load_complete_pwv_map()
@@ -85,15 +83,16 @@ class use_ARIS(object):
         T = 275
         e = 1e6/self.h * EPL/(k2/T + k3/(T**2))
         return e
-
+    """
     def load_complete_pwv_map(self):
-        """Loads the previously saved pwv map. This map is already filtered with
+        """"""Loads the previously saved pwv map. This map is already filtered with
         a Gaussian beam.
-        """
+        """"""
         print('Number of atmosphere strips loaded: ', self.max_num_strips)
-        path = self.path_model + '/Data/output_ARIS/complete_filtered_pwv_map.txt'
+        #path = self.path_model + '/Data/output_ARIS/complete_filtered_pwv_map.txt'
+        path = self.sourcepath.joinpath('complete_filtered_pwv_map.txt')
         self.filtered_pwv_matrix = np.loadtxt(path)
-
+        """
     def initialize_pwv_matrix(self, time):
         """Initializes the pwv_matrix property of the use_ARIS instance. It loads
         in the amount of atmosphere strips that it needs, converts it into a matrix
@@ -105,7 +104,7 @@ class use_ARIS(object):
         #print('Number of atmosphere strips loaded: ', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
-            d = np.loadtxt(self.pathname + filename, delimiter=',', skiprows = 18)
+            d = np.loadtxt(self.sourcepath.joinpath(filename), delimiter=',', skiprows = 18)
             if i == 0:
                 nx = int(max(d[:, 0])) + 1
                 ny = int(max(d[:, 1])) + 1

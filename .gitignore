@@ -144,7 +144,8 @@ cython_debug/
 
 # Specific to TiEMPO
 /tiempo_deshima/Data/output_ARIS/*
-/tiempo_deshima/Data/output_DESHIMA_model
+/tiempo_deshima/Data/output_TiEMPO
+/tiempo_deshima/output_TiEMPO
 /tiempo_deshima/Data/Tb_sky
 /tiempo_deshima/Data/F
 __pycache__

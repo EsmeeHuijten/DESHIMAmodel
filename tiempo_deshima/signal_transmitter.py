@@ -74,6 +74,11 @@ class signal_transmitter(object):
             self.save_path = Path(input['savefolder'])
         if Path.exists(self.save_path) == False:
             self.save_path.mkdir(parents = True)
+        self.sourcepath = input('sourcefolder')
+        self.sourcepath.strip('.')
+        self.sourcepath.strip('/')
+        self.sourcepath.strip('\\')
+        self.sourcepath = Path.cwd().joinpath(self.sourcepath)
         self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
         F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
         self.filters = F
@@ -85,7 +90,7 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        aris_instance = use_aris.use_ARIS(self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
+        aris_instance = use_aris.use_ARIS(self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix

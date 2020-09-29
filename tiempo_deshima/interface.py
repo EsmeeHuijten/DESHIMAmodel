@@ -17,7 +17,7 @@ def calcMaxObsTime(dictionary):
                     /dictionary['windspeed']
     return max_obs_time
 
-def get_dictionary(input_dictionary, prefix_atm_data, save_name_data, savefolder, n_jobs,\
+def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder, n_jobs,\
                    obs_time = 2., grid = .2, x_length_strip = 65536., \
                    luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
@@ -144,7 +144,8 @@ def get_dictionary(input_dictionary, prefix_atm_data, save_name_data, savefolder
             'prefix_atm_data':prefix_atm_data,
             'save_name_data':save_name_data,
             'n_jobs':n_jobs,
-            'savefolder' : savefolder
+            'savefolder' : savefolder,
+            'sourcefolder' : sourcefolder
         }
         return dictionary
     dictionary['n_jobs'] = n_jobs
@@ -161,9 +162,10 @@ def get_dictionary(input_dictionary, prefix_atm_data, save_name_data, savefolder
     dictionary['pwv_0'] = pwv_0
     dictionary['windspeed'] = windspeed
     dictionary['savefolder'] = savefolder
+    dictionary['sourcefolder'] = sourcefolder
     return dictionary
 
-def run_tiempo(input_dictionary, prefix_atm_data, save_name_data, savefolder = None, n_jobs = 30,\
+def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder = None, n_jobs = 30,\
                    obs_time = 3600., grid = .2, x_length_strip = 65536., \
                    luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
@@ -232,7 +234,7 @@ def run_tiempo(input_dictionary, prefix_atm_data, save_name_data, savefolder = N
     Saves '<cwd>/output_TiEMPO/<save_name_data>+T_X.npy' OR '<savefolder>/<save_name_data>+T_X.npy': numpy array of floats
         array of the power values of the signal converted to sky temperature in Kelvins. Dimensions are: [5 x #filters x #timesamples], as 5 pwv values are taken for each timesample
     """
-    dictionary = get_dictionary(input_dictionary, prefix_atm_data, \
+    dictionary = get_dictionary(input_dictionary, prefix_atm_data, sourcefolder,\
                                 save_name_data, savefolder, n_jobs, obs_time, grid, \
                                 x_length_strip, luminosity, redshift, \
                                 linewidth, EL, max_num_strips, pwv_0, F_min, \
