@@ -88,3 +88,7 @@ dict = tiempo_deshima.get_dictionary(input_dictionary = 'manual', prefix_atm_dat
 tiempo_deshima.new_filterbank(dict)
 time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'manual', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation_new_filters')
 ```
+## Installation
+```
+pip install tiempo_deshima
+```
