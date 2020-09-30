@@ -20,11 +20,11 @@ import galspec
 # plt.rcParams['figure.constrained_layout.use'] = True
 plt.rc('font', size=10)
 
-import DESHIMA.desim.minidesim as dsm
-import Atmosphere.use_aris as use_aris
-import Telescope.telescope_transmission as tt
-import DESHIMA.use_desim as use_desim
-import DESHIMA.MKID.photon_noise as pn
+from .DESHIMA.desim import minidesim as dsm
+from .Atmosphere import use_aris
+from .Telescope import telescope_transmission as tt
+from .DESHIMA import use_desim
+from .DESHIMA.MKID import photon_noise as pn
 
 def unwrap_processInput(st1, i, aris_instance, use_desim_instance, time_step, count):
     """

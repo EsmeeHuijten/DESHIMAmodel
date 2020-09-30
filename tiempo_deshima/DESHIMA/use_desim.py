@@ -1,17 +1,17 @@
 import numpy as np
-import pandas as pd
-import time
+#import pandas as pd
+#import time
 import math
-import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
-from scipy import integrate
+#import matplotlib.pyplot as plt
+#from matplotlib.ticker import ScalarFormatter
+#from scipy import integrate
 
-import sys
-sys.path.append('./DESHIMA/desim/')
-sys.path.append('./desim/')
-sys.path.append('../desim/')
-import minidesim as dsm
-sys.path.append('./DESHIMA/')
+#import sys
+#sys.path.append('./DESHIMA/desim/')
+#sys.path.append('./desim/')
+#sys.path.append('../desim/')
+from .desim import minidesim as dsm
+#sys.path.append('./DESHIMA/')
 
 # cython
 # import pyximport; pyximport.install()

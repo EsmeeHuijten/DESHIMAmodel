@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import scipy.special
 # plt.style.use('dark_background')
 
-import sys
-sys.path.append('./DESHIMA/MKID/')
+#import sys
+#sys.path.append('./DESHIMA/MKID/')
 
 class photon_noise(object):
     """

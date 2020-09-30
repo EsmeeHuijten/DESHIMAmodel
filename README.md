@@ -1,6 +1,8 @@
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?label=License&style=flat-square)](LICENSE)
+
 ## Overview of the model 
 The image below shows a schematic overview of how the model is built up. 
-![Overview model](overview_model.png)
+![Overview model](https://raw.githubusercontent.com/EsmeeHuijten/DESHIMAmodel/master/overview_model.png)
 In order to run the model, create a directory ```output_ARIS``` in ```tiempo/Data``` with ARIS files.
 
 ## Output of the model 
@@ -11,7 +13,7 @@ The model outputs the following data:
 4. Center frequencies of the filters: The center frequencies of the filters in the filterbank in the MKID chip in Hz. 
 
 The pwv values are taken in the following order: 
-![pwv values](skychopping_5chops.png)
+![pwv values](https://raw.githubusercontent.com/EsmeeHuijten/DESHIMAmodel/master/skychopping_5chops.png)
 
 ## Using the model
 The model is operated from *main.py*. In this file, there are different variables that can be set: 

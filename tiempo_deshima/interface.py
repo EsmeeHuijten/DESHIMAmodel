@@ -1,6 +1,6 @@
 #import main
 import numpy as np
-import signal_transmitter as st
+from . import signal_transmitter as st
 import os
 
 def calcMaxObsTime(dictionary):
