@@ -1,9 +1,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?label=License&style=flat-square)](LICENSE)
 
-## Overview of the model 
-The image below shows a schematic overview of how the model is built up. 
-![Overview model](https://raw.githubusercontent.com/EsmeeHuijten/DESHIMAmodel/master/overview_model.png)
-In order to run the model, create a directory ```output_ARIS``` in ```tiempo/Data``` with ARIS files.
+Time-dependent end-to-end model for post-process optimization of the DESHIMA spectrometer.
+
+## TL;DR
+TiEMPO allows for simulating the output of the DESHIMA spectrometer. The model features simulation of an input galaxy with atomic spectral lines that is sampled with the ABBA chopnod method. The simulation includes atmospheric distrotion through distortions in the optical thickness of the atmosphere due to precipitable water vapor using outputs of the ARIS model (provided by the user), telescope transmission and finally noise and attenuation due to the MKID filterbank of DESHIMA.
 
 ## Output of the model 
 The model outputs the following data: 
@@ -16,48 +16,75 @@ The pwv values are taken in the following order:
 ![pwv values](https://raw.githubusercontent.com/EsmeeHuijten/DESHIMAmodel/master/skychopping_5chops.png)
 
 ## Using the model
-The model is operated from *main.py*. In this file, there are different variables that can be set: 
+### Example
+```
+time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'deshima_2', prefix_atm_data = 'aris200602.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation')
+```
+Inputs include:
 
 ### Atmosphere
 **pwv_0** (*float*): The value of the precipitable water vapor that is added to the dpwv from ARIS in mm. 
 **windspeed** (*float*): The windspeed of the atmosphere in m/s.
-**prefix_atm_data** (*string*): The beginning of the name with which the atmosphere data is saved in *./Data/output_ARIS*. For example, if the files are called
-*sample-00.dat-000*, *sample-00.dat-001* etc, then Prefix_atm_data must be 'sample-00.dat-'
+**prefix_atm_data** (*string*): The beginning of the name with which the atmosphere data is saved. For example, if the files are called *sample-00.dat-000*, *sample-00.dat-001* etc, then Prefix_atm_data must be 'sample-00.dat-'
+**sourcefolder** (*string*): folder in which the atmosphere data is saved (relative to cwd)
 **grid** (*float*): The width of a grid square in the atmosphere map in m
-**max_num_strips** (*integer*): The number of atmosphere strips that is saved in *./Data/output_ARIS*
-**x_length_strips** (*float*): The length of one atmosphere strip in the x direction. This is the number of gridpoints, *not* the distance in meters. Thus, this is an integer number, taken as a float to make sure calculations with this number result in a float. 
+**max_num_strips** (*integer*): The number of atmosphere strips that are saved as ARIS output.
+**x_length_strip** (*int*): The length of one atmosphere strip in the x direction. This is the number of gridpoints, *not* the distance in meters.  
+**useDESIM** (*bool*): Determines whether the simple atmospheric model is used (0) or the more sophisticated desim simulation (1).
+**inclAtmosphere** (*bool*):Determines whether the simple atmospheric model is used (0) or the more sophisticated desim simulation (1).
 
 ### Galaxy
 **luminosity** (*float*): Luminosity of the galaxy, in Log(L_fir [L_sol])
 **redshift** (*float*): The redshift of the galaxy
 **linewidth** (*float*): The linewidth, in km/s
+**num_bins** (*int*): Determines the amount of bins used in the simulation of the galaxy spectrum. 
 
 ### Observation
 **EL** (*float*): The elevation of the telescope, in degrees
+**EL_vec** (*vector of floats*): If this parameter is set, it allows to specify the elevation of the telescope in degrees per timestep, for example in the case of tracking a target. Vector must have a length of 160Hz times obs_time.
 **obs_time** (*float*): The observation time. This parameter has to be smaller than **max_obs_time**, which is calculated using the windspeed and the total length of the strips of atmosphere data, in s.
 **draw_filters** (*list*): List of the filters that need to be plotted in the final plot (starts counting at 1, NOT 0). For example, if draw_filters = [1, 2], the first and the second filter are plotted, and if draw_filters = [1, 347], the first and the last filter are plotted. 
-**save_name_plot** (*string*): The name with which the produced plot is saved. 
-**save_name_data** (*string*): The name with which the produced data is saved to *.Data/output_DESHIMA_model/*. The center frequencies of the filters are saved as *save_name_data_F.npy* and the sky temperature matrix is saved as *save_name_data_T.npy*
+**save_name_plot** (*string*): The name with which the produced plot is saved.to *.Data/output_DESHIMA_model/*. The center frequencies of the filters are saved as *save_name_data_F.npy* and the sky temperature matrix is saved as *save_name_data_T.npy*
 
-### Important
-1. All atmosphere strips must have the same length in the x direction and a length in the y direction of at least 30 gridpoints. ('length' means number of gridpoints, *not* distance in meters)
-2. If **pwv_0** is changed, signal_transmitter.save_filtered_pwv_map() needs to run again to save the right pwv map (See section 'Changing the atmosphere data' to see how'). 
+### Instrument
+**F_min** (*float*): Lowest center frequency of all the MKIDs.
+**spec_res** (*float*): Spectral resolution
+**f_spacing** (*float*): spacing between center frequencies = F/dF (mean).
+**num_filters** (*float*): Number of filters in the filterbank
+**beam_radius** (*float*): Radius of the Gaussian telescope beam in meters.
 
-## Changing the atmosphere data
-1. Save the new atmosphere data in *./Data/output_ARIS/*
-2. Change **prefix_atm_data**, **grid**, **max_num_strips**  and **x_length_strips** in *main.py* and the **x_length_strips** property of *use_aris.py* to the right values. 
-3. From *main.py* run signal_transmitter.save_filtered_pwv_map() with the signal_transmitter instance in *main.py*. This function loads in and filters the complete atmosphere map (consisting of all atmosphere strips). This will save computation time when simulations with a large observing time are done. 
+### Miscellaneous
+**input_dictionary** (*string*): Determines where the input values of keywords F_min thru come from: either standard values for DESHIMA, manual entry from the keywords or from a txt file 
+**dictionary_name** (*string*): name of a txt file in which the values of optional keywords are saved.
+**save_name_data** (*string*): The name with which the produced data is saved.
+**savefolder** (*string*): Folder in which the produced data is saved (relative to cwd)
+**save_P** (*bool*): determines whether power in Watts is saved
+**save_T** (*bool*): determines whether sky temperature in Kelvins is saved
+**n_jobs** (*int*): amount of threads in the threadpool
+**n_batches** (*int*): amount of batches in which the output data is divided into in time
 
-Now *main.py* can be used like always again. 
+## Important instructions
 
+### Atmosphere
+* All atmosphere strips must have the same length in the x direction and a length in the y direction of at least 30 gridpoints. ('length' means number of gridpoints, *not* distance in meters)
+* If **pwv_0** is changed, ```change_pwv_0()``` needs to be run with the same input dictionary as ```run_tiempo()``` before executing ```run_tiempo``` again. This can be done easily by generating the dictionary using ```get_dictionary``` with the same arguments as ```run_tiempo()```. 
+
+#### Example of changing the atmosphere data:
+**Don't forget to supply the location of the new ARIS data**
+```
+dict = tiempo_deshima.dictionary(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
+tiempo_deshima.change_pwv_0(dict)
+time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
+```
+
+### Changing filters
 ## Changing the number of filters or the distribution of the center frequencies of the filters
-For each filter, an interpolation between the power and the sky temperature is made. This means that these interpolations need to be made and saved again if the center frequencies of the filters are changed. This is done as follows: 
+* For each filter, an interpolation between the power and the sky temperature is made. This means that these interpolations need to be made and saved again if the center frequencies of the filters are changed, before TiEMPO can be run again. This can be done by using ```new_filterbank()``` with the desired input dictionary, which can be generated using ```get_dictionary()```.
+* Since the chip properties are altered, 'deshima_1' and 'deshima_2' cannot be used as keywords for *input_dictionary* anymore.
 
-1. Go to *./DESHIMA/MKID/filterbank.py*
-2. Change **num_filters** for a different number of filters, **F_min** for a different lowest center frequency or **R** for a different spectral resolution. For a different distribution of the center frequencies, edit *self.filters* in the init function of the filterbank class. 
-3. Run *filterbank.py*
-
-Now the new interpolation curves should be saved in *./Data/splines_Tb_sky*. Now make sure *self.filters* in *signal_transmitter.py* is the same vector as *self.filters* in *filterbank.py* and the model can be used again. 
-
-
- 
+#### Example of changing the filters
+```
+dict = tiempo_deshima.dictionary(input_dictionary = 'manual', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation_new_filters')
+tiempo_deshima.new_filterbank(dict)
+time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'manual', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation_new_filters')
+```

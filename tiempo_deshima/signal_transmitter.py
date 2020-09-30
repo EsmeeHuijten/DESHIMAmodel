@@ -6,25 +6,22 @@ which corresponds to transmitting a signal through multiple objects in the model
 """
 #import time
 import math
-#import matplotlib.pyplot as plt
-#from matplotlib.ticker import StrMethodFormatter, NullFormatter
 from joblib import Parallel, delayed
-#import multiprocessing
 import numpy as np
-#import scipy.special
-#import os
 from pathlib import Path
-#import sys
 import galspec
-# plt.style.use('dark_background')
-# plt.rcParams['figure.constrained_layout.use'] = True
-#plt.rc('font', size=10)
 
 from .DESHIMA.desim import minidesim as dsm
 from .Atmosphere import use_aris
 from .Telescope import telescope_transmission as tt
 from .DESHIMA import use_desim
 from .DESHIMA.MKID import photon_noise as pn
+
+# import DESHIMA.desim.minidesim as dsm
+# import Atmosphere.use_aris as use_aris
+# import Telescope.telescope_transmission as tt
+# import DESHIMA.use_desim as use_desim
+# import DESHIMA.MKID.photon_noise as pn
 
 def unwrap_processInput(st1, i, aris_instance, use_desim_instance, time_step, count):
     """
@@ -57,16 +54,14 @@ class signal_transmitter(object):
         self.redshift = input['redshift']
         self.linewidth = input['linewidth']
         self.EL = input['EL']
+        self.EL_vec = input['EL_vec']
+        if type(self.EL_vec) == type(None): self.vecmode = False
+        else: self.vecmode = True
         self.max_num_strips = input['max_num_strips']
         self.save_name_data = input['save_name_data']
         self.pwv_0 = input['pwv_0']
         self.D1 = input['D1']
         self.n_jobs = input['n_jobs']
-        #if self.D1:
-        #    print('Simulation of DESHIMA 1.0')
-        #else:
-        #    print('Simulation of DESHIMA 2.0')
-        #self.path_model = os.path.dirname(os.path.abspath(__file__))
         self.path_model = Path(__file__).parent
         if input['savefolder'] == None:
             self.save_path = Path.cwd().joinpath('output_TiEMPO')
@@ -93,6 +88,9 @@ class signal_transmitter(object):
         self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
         F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
         self.filters = F
+        self.save_P = input['save_P']
+        self.save_T = input['save_T']
+        self.n_batches = input['n_batches']
 
     def save_filtered_pwv_map(self):
         """
@@ -101,7 +99,7 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        aris_instance = use_aris.use_ARIS(self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
+        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
@@ -122,8 +120,8 @@ class signal_transmitter(object):
         """
         pwv_values = aris_instance.obt_pwv(time_step, count, self.windspeed)
         # pwv_values = np.ones([5, 1]) # to test without atmosphere fluctuations
+        if self.vecmode: self.EL = self.EL_vec[i]
         [results_desim, self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[0:4]
-
         # Calculate the power from psd_KID
         first_dif = self.bin_centres[1] - self.bin_centres[0]
         last_dif = self.bin_centres[-1] - self.bin_centres[-2]
@@ -170,7 +168,7 @@ class signal_transmitter(object):
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        aris_instance = use_aris.use_ARIS(self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
+        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         # aris_instance = 0 # to test without atmosphere fluctuations
@@ -185,33 +183,31 @@ class signal_transmitter(object):
 
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
-
-        #num_cores = multiprocessing.cpu_count()
-        #end_non_parallel = time.time()
-        #print('Elapsed time non-parallel part: ', end_non_parallel-start_non_parallel)
-        #print('Going into parallel')
-        #relpath =  'output_TiEMPO'
-        #path_F = self.path_model.joinpath(relpath, self.save_name_data + "_F")
-        #np.save(path_F, np.array(self.filters))
-        #start = time.time()
-        for l in range(0, 8, 1):
-            step_round = math.floor(self.num_samples/8)
+        for l in range(0, self.n_batches, 1):
+            step_round = math.floor(self.num_samples/self.n_batches)
             inputs = range(l * step_round, (l+1) * step_round)
             power_matrix = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
             power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
             for j in range(step_round):
                 power_matrix_res[:, :, j] = power_matrix[j]
-            T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-            for k in range(power_matrix[0].shape[0]):
-                    T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
-            path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
-            np.save(path_T, np.array(T_sky_matrix))
-            path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
-            np.save(path_P, np.array(power_matrix_res))
-            del T_sky_matrix, power_matrix, power_matrix_res
-            #print('Finished round ' + str(l + 1) + ' out of 8')
-        #end = time.time()
-        #print('Elapsed time parallel part: ', end - start)
+            #T calculation
+            if self.save_T:
+                T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                for k in range(power_matrix[0].shape[0]):
+                    if self.vecmode:
+                        for i in range(step_round):
+                            self.EL = self.EL_vec[inputs[i]]
+                            T_sky_matrix[k, :, i] = self.convert_P_to_Tsky(power_matrix_res[k,:,i], self.filters)
+                    else:
+                        T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
+                path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
+                np.save(path_T, np.array(T_sky_matrix))
+                del T_sky_matrix
+            #save P
+            if self.save_P:
+                path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
+                np.save(path_P, np.array(power_matrix_res))
+            del power_matrix, power_matrix_res
         return [time_vector, self.filters]
 
     def convert_P_to_Tsky(self, power_matrix, filters):
@@ -236,56 +232,9 @@ class signal_transmitter(object):
                 filename = 'Data/splines_Tb_sky/spline_' + "{0:.1f}".format(filters[i]/1e9) +'GHz.npy'
             f_load = np.load(path.joinpath(filename), allow_pickle= True)
             f_function = f_load.item()
-            for j in range(0, power_matrix.shape[1]):
-                T_sky_matrix[i, j] = f_function(self.EL, power_matrix[i, j])
-        return T_sky_matrix
-"""
-    def draw_signal(self, save_name_plot, plot_filters = [1]):
-        """"""
-        This function makes sure the signal is calculated for each filter and
-        plots the signal for the filters given in plot_filters. It then saves
-        plot in the same folder as this file with the name save_name_plot.
-
-        The part of the signal that is plotted is the middle left position of
-        the pwv values.
-        """"""
-        plt.figure()
-        if self.useDESIM:
-            if self.num_filters > 1:
-                if self.inclAtmosphere:
-                    [x, power_matrix, T_sky_matrix, filters, start] = self.transmit_signal_DESIM_multf_atm()
-                else:
-                    [x, power_matrix, filters] = self.transmit_signal_DESIM_multf()
-                # T_sky_matrix = self.convert_P_to_Tsky(power_matrix[0], filters)
-                num_plots = len(plot_filters)
-                # fig.set_dpi(200)
-                # fig.set_size_inches(0.9, 0.9)
-                # plt.rcParams.update({'font.size': 22})
-                for i in range(0, num_plots):
-                    plt.subplot(1, num_plots, i + 1)
-                    y = T_sky_matrix[0, plot_filters[i]-1, :]
-                    plt.title('Filter ' + str(plot_filters[i]))
-                    plt.plot(x, y, linewidth=0.5, color='darkblue')
-                    plt.ticklabel_format(useOffset=False)
-                    plt.xlabel('Time (s)')
-                    plt.ylabel('T_sky (K)')
-                # plt.tight_layout()
-                #end = time.time()
-                #print('Elapsed time parallel part: ', end - start)
-                plt.savefig(save_name_plot, transparent=True)
-                plt.show()
-                return [x, power_matrix, T_sky_matrix, filters]
+            if self.vecmode:
+                T_sky_matrix[i] = f_function(self.EL, power_matrix[i])
             else:
-                [x, y] = self.transmit_signal_DESIM()
-                plt.title('Mock-up time signal using DESIM')
-        else:
-            [x, y] = self.transmit_signal_simple()
-            plt.title('Mock-up time signal using the spectral response of 1 filter')
-        print('Standard deviation is ' + str(math.sqrt(np.var(y))))
-        plt.plot(x, y)
-        plt.ticklabel_format(useOffset=False)
-        # ax.get_yaxis().get_major_formatter().set_useOffset(False)
-        plt.xlabel('Time (s)')
-        plt.ylabel('Power (W)')
-        plt.show()
-"""
+                for j in range(0, power_matrix.shape[1]):
+                    T_sky_matrix[i, j] = f_function(self.EL, power_matrix[i, j])
+        return T_sky_matrix

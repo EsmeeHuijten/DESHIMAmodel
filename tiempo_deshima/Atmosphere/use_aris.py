@@ -1,17 +1,6 @@
-
-#from mpl_toolkits.axes_grid1 import make_axes_locatable
-#from scipy import interpolate, optimize
-
 import math
 import numpy as np
-#import matplotlib.animation as animation
-#from matplotlib.transforms import Transform
-#from matplotlib.ticker import (
-#    AutoLocator, AutoMinorLocator)
 
-
-# from Atmosphere_model_Kah_Wuy.aris import load_aris_output
-# import Telescope.telescope_transmission as tt
 
 class use_ARIS(object):
     """
@@ -24,25 +13,17 @@ class use_ARIS(object):
 
     a = 6.3003663 #m
     separation = 2*0.5663 #m (116.8 arcseconds)
-    x_length_strip = 32768
     h = 1000 #m
 
-    def __init__(self, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
+    def __init__(self, x_length_strip, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
         #make function to convert EPL to pwv
-        # pwv_vector = np.linspace(0, 5e-3, 1000)
-        # e_vector = use_ARIS.calc_e_from_pwv(pwv_vector)
-        # self.interp_e = interpolate.interp1d(e_vector, pwv_vector)
         self.pwv_0 = pwv_0
         self.prefix_filename = prefix_filename
         self.grid = grid
         self.windspeed = windspeed
         self.max_num_strips = max_num_strips
-        #self.path_model = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        #if __name__ == "__main__":
-        #    self.pathname = "../Data/output_ARIS/"
-        #else:
-        #    self.pathname = self.path_model + '/Data/output_ARIS/'
         self.sourcepath = sourcepath
+        self.x_length_strip = x_length_strip
         self.filtered_pwv_matrix = "None"
         if loadCompletePwvMap:
             self.load_complete_pwv_map()
@@ -158,124 +139,3 @@ class use_ARIS(object):
         positions = [pos_1, pos_2, pos_3, pos_4, pos_5]
         return positions
 
-##------------------------------------------------------------------------------
-## The methods below are not used in the model atm
-##------------------------------------------------------------------------------
-"""
-    def make_image(self):
-        fig = plt.figure()
-        ax = plt.subplot(111)
-        print(self.pwv_matrix.shape)
-        # plot_matrix = self.pwv_matrix[1000:1150, 0:150]
-        plot_matrix = self.pwv_matrix[0:159, 0:159]
-        print(plot_matrix)
-        im = plt.imshow(plot_matrix)
-        ticks = np.round(np.linspace(0, 160, 9))
-        ticklabels = ticks/5
-        ticklabels = ticklabels.astype(int)
-        plt.xticks(ticks, ticklabels, fontsize=14)
-        plt.yticks(ticks, ticklabels, fontsize=14)
-        # # plt.gcf().subplots_adjust(top=0.83)
-        ax.set_xlabel("East-west distance (m)", fontsize=14)
-        ax.set_ylabel("North-south distance (m)", fontsize=14)
-        # ax_new = ax.twiny()
-        # ax_new.set_ylabel("Precipitable water vapor (mm)", fontsize=14)
-        # ax_new.set_ylabel("arcsec")
-        # ticks = np.linspace(0, 1, 5)
-        # ticklabels = np.round(use_ARIS.m2arcsec(ticks*512)) #hardcoded
-        # plt.xticks(ticks, ticklabels)
-        # plt.yticks(ticks, ticklabels)
-        # ax_new.set_xlabel("arcsec")
-
-        # secax = ax.secondary_yaxis('right', functions=(use_ARIS.m2arcsec, use_ARIS.arcsec2m))
-        # ax.set_title("Atmosphere Structure", fontsize=16)
-        # plt.text(0.9, 0.8, 'Precipitable water vapor (mm)', fontsize=14, rotation=90)
-        plt.text(1.24, 0.5, r"Precipitable water vapor (mm)", {'fontsize': 14},
-         horizontalalignment='left',
-         verticalalignment='center',
-         rotation=90,
-         clip_on=False,
-         transform=plt.gca().transAxes)
-        # divider = make_axes_locatable(ax_new)
-        # # cax = divider.append_axes("right", size="4%", pad=0)
-        # # on the figure total in precent [left, bottom, width, height]
-        cax = fig.add_axes([0.82, 0.12, 0.02, 0.76])
-        colorbar_1 = fig.colorbar(im, cax=cax, format='%.4f')
-        plt.savefig('Atmosphere window.pdf', format='pdf')
-        # colorbar_1.set_label('precipitable water vapor (mm)', labelpad=-10, y=1.05, rotation=0)
-        plt.show()
-
-    def m2arcsec(x):
-        arcsec = np.arctan(x/1e3)*3600
-        return arcsec
-
-    def arcsec2m(x):
-        m = np.tan(x/3600)*1e3
-        return m
-
-    def make_animation(self, length_side):
-        fig = plt.figure()
-        ax = plt.subplot(111)
-        ax.set_xlabel("[m]")
-        ax.set_ylabel("[m]")
-        ax.set_title("Atmosphere Structure")
-        pwv_shape = self.pwv_matrix.shape
-        num_frames = min(pwv_shape[0], pwv_shape[1])-length_side
-        y_min = int(np.round(pwv_shape[0]/2) - np.round(length_side/2))
-        y_max = int(np.round(pwv_shape[0]/2) + np.round(length_side/2))
-        x_min = 0
-        x_max = length_side
-        self.pwv_matrix = self.pwv_matrix[y_min:y_max, :]
-        # pwv_frame = self.pwv_matrix[x_min:x_max, y_min:y_max]
-        # im = plt.imshow(pwv_frame, cmap = 'viridis')
-        ims = []
-        for i in range(0, num_frames):
-            # pwv_frame = self.pwv_matrix[y_min:y_max, x_min:x_max]
-            pwv_frame = self.pwv_matrix[:, x_min:x_max]
-            im = plt.imshow(pwv_frame, animated=True, cmap = 'viridis', vmin = np.min(self.pwv_matrix), vmax = np.max(self.pwv_matrix))
-            ims.append([im])
-            x_min += 1
-            x_max += 1
-        #
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        colorbar_1 = plt.colorbar(im, cax=cax)
-        colorbar_1.set_label('pwv in mm', labelpad=-10, y=1.05, rotation=0)
-        ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True,
-                                repeat_delay=1000)
-        Writer = animation.FFMpegWriter(fps=10, metadata=dict(artist='Me'), bitrate=1000)
-        file_string = r'C:/Users/Esmee/Documents/BEP/DESHIMA/Animations/animation_atmosphere.mp4'
-        ani.save(file_string, writer=Writer)
-        plt.show()
-        plt.pause(0.05)
-"""
-# ARIS_instance_1 = use_ARIS('ARIS_200427.dat-', 1.0, 0.2, 10, 0, 40)
-# ARIS_instance_1.make_image()
-# filename = "sample00.dat"
-# length_side = 100
-# atm_data_1 = use_ARIS(filename)
-# # atm_data_1.make_image()
-# atm_data_1.make_animation(length_side)
-
-#square, in the middle
-#512 = 16 * 32
-# pwv_shape = pwv_samp.shape
-# y_min = int(np.round(pwv_shape[0]/2) - np.round(length_side/2))
-# y_max = int(np.round(pwv_shape[0]/2) + np.round(length_side/2))
-# x_min = 0
-# x_max = length_side
-# pwv_samp_frame1 = pwv_samp[x_min:x_max, y_min:y_max]
-# print(pwv_samp_frame1)
-#use submatrix or splice or something, then use animate or time/update
-# ax = plt.subplot(111)
-# im = ax.imshow(pwv_samp, cmap = 'viridis')
-#
-# ax.set_xlabel("[m]")
-# ax.set_ylabel("[m]")
-# ax.set_title("Atmosphere Structure (pwv)")
-#
-# divider = make_axes_locatable(ax)
-# cax = divider.append_axes("right", size="5%", pad=0.05)
-# plt.colorbar(im, cax=cax)
-# plt.show()
-# plt.savefig("./figs/Compare/Atm_structure.png")

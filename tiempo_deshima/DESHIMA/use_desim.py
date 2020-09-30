@@ -1,23 +1,8 @@
 import numpy as np
-#import pandas as pd
-#import time
 import math
-#import matplotlib.pyplot as plt
-#from matplotlib.ticker import ScalarFormatter
-#from scipy import integrate
-
-#import sys
-#sys.path.append('./DESHIMA/desim/')
-#sys.path.append('./desim/')
-#sys.path.append('../desim/')
 
 from .desim import minidesim as dsm
-
-#sys.path.append('./DESHIMA/')
-
-# cython
-# import pyximport; pyximport.install()
-# import Lorentzian
+# import DESHIMA.desim.minidesim as dsm
 
 class use_desim(object):
 
@@ -172,8 +157,9 @@ class use_desim(object):
         for el in data_names:
             data.append(np.array(D2goal[el]))
         return data
-
-    def calcT_psd_P(self, eta_atm_df, F_highres, eta_atm_func_zenith, F_filter, EL_vector, num_filters, pwv = 0.1, R = 500, num_bins = 1500, progressbar = None, D1 = 0):
+    
+    def calcT_psd_P(self, eta_atm_df, F_highres, eta_atm_func_zenith, F_filter, EL_vector, num_filters, pwv = 0.1, R = 500, num_bins = 1500, D1 = 0):
+        
         length_EL_vector = len(EL_vector)
         margin = 10e9
         # F_bins = np.logspace(np.log10(F_filter[0]-margin), np.log10(F_filter[-1] + margin), num_bins) #to calculate the Lorentzian
@@ -214,8 +200,7 @@ class use_desim(object):
             'eta_mb' : eta_mb[j]
             }
             [psd_co[j, :], psd_jn_chip[j, :]] = self.obt_data(input, D1)
-            if progressbar:
-                progressbar.next()
+
 
         # Obtain psd_kid
         for i in range(0, num_filters):
@@ -224,9 +209,8 @@ class use_desim(object):
             eta_chip = instrument_properties['eta_lens_antenna_rad'] * eta_circuit
             eta_chip_matrix = np.tile(eta_chip.reshape(len(eta_chip), 1), (1, length_EL_vector))
             psd_KID[i, :, :] =  dsm.rad_trans(psd_co, psd_jn_chip, eta_chip_matrix)
-            if progressbar:
-                progressbar.next()
 
+        
         delta_F = F_bins[1] - F_bins[0]
         numerators = np.zeros([EL_vector.shape[0], num_filters])
         denominators = np.zeros(num_filters)
@@ -259,7 +243,5 @@ class use_desim(object):
             'eta_mb' : eta_mb[l]
             }
             Tb_sky[l, :]  = self.obt_data(input, D1)[0]
-            if progressbar:
-                progressbar.next()
 
         return Tb_sky, psd_KID, F_bins
