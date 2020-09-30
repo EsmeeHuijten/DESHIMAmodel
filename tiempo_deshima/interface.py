@@ -4,9 +4,9 @@ This module allows users to execute funtioncs in signal_transmitter, while provi
 
 
 import numpy as np
-# from . import signal_transmitter as st
-import signal_transmitter as st
-import DESHIMA.MKID.filterbank as ft
+#import signal_transmitter as st
+from . import signal_transmitter as st
+from .DESHIMA.MKID import filterbank as ft
 import os
 
 def calcMaxObsTime(dictionary):
@@ -17,8 +17,7 @@ def calcMaxObsTime(dictionary):
     """
     # maximum time
     # every strip has 32768 x-values
-    separation = 2*0.5663 #gridpoints (116.8 arcseconds)
-    max_obs_time = (dictionary['x_length_strip'] - 3 * separation)* \
+    max_obs_time = (dictionary['x_length_strip'] - 3 * dictionary['separation'])* \
                     dictionary['max_num_strips']*dictionary['grid'] \
                     /dictionary['windspeed']
     return max_obs_time
@@ -70,7 +69,7 @@ def new_filterbank(dictionary):
     ft1.save_etaF_data(pwv_vector, 90.)
 
 def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder, save_P=True, save_T=True, n_jobs = 30, n_batches = 8,\
-                   obs_time = 2., grid = .2, x_length_strip = 65536., \
+                   obs_time = 2., grid = .2, x_length_strip = 65536., separation = 1.1326,\
                    luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, EL_vec = None, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
                    num_bins = 1500, spec_res = 500, f_spacing = 500, \
@@ -103,7 +102,9 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     grid : float, optional
         The width of a grid square in the atmosphere map in meters. The default is .2.
     x_length_strip : int, optional
-        The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536..
+        The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536.
+    separation : float, optional
+        Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -198,14 +199,15 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
             'time': d[9],
             'grid':d[10],
             'x_length_strip':d[11],
-            'luminosity':d[12],
-            'redshift':d[13],
-            'linewidth':d[14],
-            'EL':d[15],
-            'max_num_strips':d[16],
-            'pwv_0':d[17],
-            'windspeed':d[18],
-            'n_batches':d[19],
+            'separation':d[12],
+            'luminosity':d[13],
+            'redshift':d[14],
+            'linewidth':d[15],
+            'EL':d[16],
+            'max_num_strips':d[17],
+            'pwv_0':d[18],
+            'windspeed':d[19],
+            'n_batches':d[20],
             'save_P': save_P,
             'save_T': save_T,
             'prefix_atm_data':prefix_atm_data,
@@ -235,10 +237,11 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     dictionary['save_P'] = save_P
     dictionary['save_T'] = save_T
     dictionary['n_batches'] = n_batches
+    dictionary['separation'] = separation
     return dictionary
 
 def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder = None, save_P=True, save_T=True, n_jobs = 30, n_batches = 8,\
-                   obs_time = 3600., grid = .2, x_length_strip = 65536., \
+                   obs_time = 3600., grid = .2, x_length_strip = 65536., separation = 1.1326,\
                    luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, EL_vec=None, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
                    num_bins = 1500, spec_res = 500, f_spacing = 500, \
@@ -270,7 +273,9 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     grid : float, optional
         The width of a grid square in the atmosphere map in meters. The default is .2.
     x_length_strip : int, optional
-        The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536..
+        The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536.
+    separation : float, optional
+        Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -322,7 +327,7 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     """
     dictionary = get_dictionary(input_dictionary, prefix_atm_data, sourcefolder,\
                                 save_name_data, savefolder, save_P, save_T, n_jobs, n_batches, obs_time, grid, \
-                                x_length_strip, luminosity, redshift, \
+                                x_length_strip, separation,luminosity, redshift, \
                                 linewidth, EL, EL_vec, max_num_strips, pwv_0, F_min, \
                                 num_bins, spec_res, f_spacing, num_filters, \
                                 beam_radius, useDESIM, inclAtmosphere, \

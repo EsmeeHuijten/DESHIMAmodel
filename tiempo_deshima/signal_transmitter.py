@@ -67,6 +67,8 @@ class signal_transmitter(object):
             self.save_path = Path.cwd().joinpath('output_TiEMPO')
         else:
             folder = input['savefolder']
+            folder = folder.strip('/')
+            folder = folder.strip('\\')
             self.save_path = Path(input['savefolder'])
             self.savepath = Path.cwd()
             while folder.startswith('.'):
@@ -78,6 +80,8 @@ class signal_transmitter(object):
         if Path.exists(self.save_path) == False:
             self.save_path.mkdir(parents = True)
         folder = input['sourcefolder']
+        folder = folder.strip('/')
+        folder = folder.strip('\\')
         self.sourcepath = Path.cwd()
         while folder.startswith('.'):
             folder = folder.strip('.')
@@ -91,6 +95,7 @@ class signal_transmitter(object):
         self.save_P = input['save_P']
         self.save_T = input['save_T']
         self.n_batches = input['n_batches']
+        self.separation = input['separation']
 
     def save_filtered_pwv_map(self):
         """
@@ -99,7 +104,7 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40)
+        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40, self.separation)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
@@ -168,7 +173,7 @@ class signal_transmitter(object):
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, 0)
+        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, self.separation, 0)
         tt_instance = tt.telescope_transmission()
         aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
         # aris_instance = 0 # to test without atmosphere fluctuations

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tiempo_deshima", 
-    version="0.1.12",
+    version="0.1.0",
     author="Esmee Huijten (edits: Stefanie Brackenhoff)",
     maintainer= "Stefanie Brackenhoff <s.a.brackenhoff@student.tudelft.nl>",
     description="time-dependent end-to-end model for post-process optimization",

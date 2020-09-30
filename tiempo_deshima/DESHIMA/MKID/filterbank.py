@@ -148,6 +148,8 @@ class filterbank(object):
             # + str(pwv_vector[i]) + ".txt"
             # filename_Tb_sky = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/Tb_sky/Tb_sky_for_pwv_" \
             # + str(pwv_vector[i]) + ".txt"
+            self.path_model.joinpath('Data/Pkid/').mkdir(parents = True, exist_ok = True)
+            self.path_model.joinpath('Data/Tb_sky/').mkdir(parents = True, exist_ok = True)
             if self.D1:
                 filename_Pkid = self.path_model.joinpath('Data/Pkid/Pkid_for_pwv_' + str(pwv_vector[i]) + '_D1.txt')
                 filename_Tb_sky = self.path_model.joinpath('Data/Tb_sky/Tb_sky_for_pwv_' + str(pwv_vector[i]) + "_D1.txt")
@@ -167,6 +169,8 @@ class filterbank(object):
             eta_atm[k, :] = self.getPoints_etaF_curve(pwv_vector[k], EL)
         # filename_eta_atm = "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/eta_atm/eta_atm.txt"
         # filename_F= "C:/Users/Esmee/Documents/BEP/DESHIMA/Python/BEP/Data/F/F.txt"
+        self.path_model.joinpath('Data/eta_atm/').mkdir(parents = True, exist_ok = True)
+        self.path_model.joinpath('Data/F/').mkdir(parents = True, exist_ok = True)
         filename_eta_atm = self.path_model.joinpath('Data/eta_atm/eta_atm.txt')
         filename_F = self.path_model.joinpath('Data/F/F.txt')
         np.savetxt(filename_eta_atm, eta_atm)

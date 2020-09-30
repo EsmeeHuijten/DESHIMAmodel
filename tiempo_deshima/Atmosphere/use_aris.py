@@ -12,10 +12,9 @@ class use_ARIS(object):
     """
 
     a = 6.3003663 #m
-    separation = 2*0.5663 #m (116.8 arcseconds)
     h = 1000 #m
 
-    def __init__(self, x_length_strip, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, loadCompletePwvMap = 0):
+    def __init__(self, x_length_strip, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, separation, loadCompletePwvMap = 0):
         #make function to convert EPL to pwv
         self.pwv_0 = pwv_0
         self.prefix_filename = prefix_filename
@@ -25,6 +24,7 @@ class use_ARIS(object):
         self.sourcepath = sourcepath
         self.x_length_strip = x_length_strip
         self.filtered_pwv_matrix = "None"
+        self.separation = separation
         if loadCompletePwvMap:
             self.load_complete_pwv_map()
         else:

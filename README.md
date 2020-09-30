@@ -30,6 +30,7 @@ Inputs include:
 **grid** (*float*): The width of a grid square in the atmosphere map in m
 **max_num_strips** (*integer*): The number of atmosphere strips that are saved as ARIS output.
 **x_length_strip** (*int*): The length of one atmosphere strip in the x direction. This is the number of gridpoints, *not* the distance in meters.  
+**separation** (*float*): Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
 **useDESIM** (*bool*): Determines whether the simple atmospheric model is used (0) or the more sophisticated desim simulation (1).
 **inclAtmosphere** (*bool*):Determines whether the simple atmospheric model is used (0) or the more sophisticated desim simulation (1).
 
@@ -72,19 +73,18 @@ Inputs include:
 #### Example of changing the atmosphere data:
 **Don't forget to supply the location of the new ARIS data**
 ```
-dict = tiempo_deshima.dictionary(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
+dict = tiempo_deshima.get_dictionary(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
 tiempo_deshima.change_pwv_0(dict)
 time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
 ```
 
-### Changing filters
-## Changing the number of filters or the distribution of the center frequencies of the filters
+### Changing the number of filters or the distribution of the center frequencies of the filters
 * For each filter, an interpolation between the power and the sky temperature is made. This means that these interpolations need to be made and saved again if the center frequencies of the filters are changed, before TiEMPO can be run again. This can be done by using ```new_filterbank()``` with the desired input dictionary, which can be generated using ```get_dictionary()```.
 * Since the chip properties are altered, 'deshima_1' and 'deshima_2' cannot be used as keywords for *input_dictionary* anymore.
 
 #### Example of changing the filters
 ```
-dict = tiempo_deshima.dictionary(input_dictionary = 'manual', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation_new_filters')
+dict = tiempo_deshima.get_dictionary(input_dictionary = 'manual', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation_new_filters')
 tiempo_deshima.new_filterbank(dict)
 time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'manual', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/output_ARIS', save_name_data = 'TiEMPO_simulation_new_filters')
 ```
