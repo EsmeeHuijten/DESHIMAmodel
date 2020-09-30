@@ -10,7 +10,9 @@ import math
 #sys.path.append('./DESHIMA/desim/')
 #sys.path.append('./desim/')
 #sys.path.append('../desim/')
+
 from .desim import minidesim as dsm
+
 #sys.path.append('./DESHIMA/')
 
 # cython

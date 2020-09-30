@@ -6,7 +6,7 @@ which corresponds to transmitting a signal through multiple objects in the model
 """
 #import time
 import math
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 #from matplotlib.ticker import StrMethodFormatter, NullFormatter
 from joblib import Parallel, delayed
 #import multiprocessing
@@ -18,7 +18,7 @@ from pathlib import Path
 import galspec
 # plt.style.use('dark_background')
 # plt.rcParams['figure.constrained_layout.use'] = True
-plt.rc('font', size=10)
+#plt.rc('font', size=10)
 
 from .DESHIMA.desim import minidesim as dsm
 from .Atmosphere import use_aris

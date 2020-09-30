@@ -19,5 +19,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    package_data={"tiempo": ['Data/splines_Tb_sky/*.npy', 'DESHIMA/desim/*', 'DESHIMA/desim/data/*', 'DESHIMA/desim/lines/*', 'DESHIMA/MKID/*']},
+    package_data={"tiempo_deshima": ['Data/splines_Tb_sky/*.npy', 'DESHIMA/*','DESHIMA/desim/*', 'DESHIMA/desim/data/*', 'DESHIMA/desim/lines/*', 'DESHIMA/MKID/*', 'Telescope/*', 'Atmosphere/*']},
 )
