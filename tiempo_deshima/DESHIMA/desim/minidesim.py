@@ -23,7 +23,7 @@ import copy
 import os
 import sys
 from matplotlib.backends.backend_pdf import PdfPages
-# from IPython.display import HTML
+#from IPython.display import HTML
 import base64
 
 h = 6.62607004 * 10**-34  # Planck constant
@@ -603,7 +603,7 @@ def photon_NEP_kid(
     r_term = 4 * Delta_Al * Pkid / eta_pb
     NEPkid = np.sqrt(poisson_term + bunching_term + r_term)
     return NEPkid
-
+"""
 def MDLF_simple(
         pwv = 0.5, # Precipitable Water Vapor in mm
         EL = 60., # Elevation angle in degrees
@@ -680,7 +680,7 @@ def MDLF_simple(
     df_download = df_download.rename(columns={'MDLF':'MDLF (baseline)'})
 
     return create_download_link(df_download,filename='MDLF.csv')
-
+"""
 def D2HPBW(F):
     HPBW = 29.*240./(F/1e9) * np.pi / 180. / 60. / 60.
     return HPBW
