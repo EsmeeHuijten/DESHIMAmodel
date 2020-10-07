@@ -11,17 +11,17 @@ import numpy as np
 from pathlib import Path
 import galspec
 
-from .DESHIMA.desim import minidesim as dsm
-from .Atmosphere import use_aris
-from .Telescope import telescope_transmission as tt
-from .DESHIMA import use_desim
-from .DESHIMA.MKID import photon_noise as pn
+# from .DESHIMA.desim import minidesim as dsm
+# from .Atmosphere import use_aris
+# from .Telescope import telescope_transmission as tt
+# from .DESHIMA import use_desim
+# from .DESHIMA.MKID import photon_noise as pn
 
-# import DESHIMA.desim.minidesim as dsm
-# import Atmosphere.use_aris as use_aris
-# import Telescope.telescope_transmission as tt
-# import DESHIMA.use_desim as use_desim
-# import DESHIMA.MKID.photon_noise as pn
+import DESHIMA.desim.minidesim as dsm
+import Atmosphere.use_aris as use_aris
+import Telescope.telescope_transmission as tt
+import DESHIMA.use_desim as use_desim
+import DESHIMA.MKID.photon_noise as pn
 
 def unwrap_processInput(st1, i, aris_instance, use_desim_instance, time_step, count):
     """
@@ -104,9 +104,9 @@ class signal_transmitter(object):
         with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
         directory with name filename.
         """
-        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40, self.separation)
+        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40, self.separation, self.beam_radius)
         tt_instance = tt.telescope_transmission()
-        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
+        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.grid, self.beam_radius)
         return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
 
     def processInput(self, i, aris_instance, use_desim_instance, time_step, count):
@@ -173,9 +173,9 @@ class signal_transmitter(object):
         time_vector = np.linspace(0, self.time, self.num_samples)
 
         #Atmosphere
-        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, self.separation, 0)
+        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath,self.prefix_atm_data, self.pwv_0, self.grid, self.windspeed, self.time, self.max_num_strips, self.separation, self.beam_radius, 0)
         tt_instance = tt.telescope_transmission()
-        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.beam_radius)
+        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.grid, self.beam_radius)
         # aris_instance = 0 # to test without atmosphere fluctuations
 
         self.eta_atm_df, self.F_highres = dsm.load_eta_atm()

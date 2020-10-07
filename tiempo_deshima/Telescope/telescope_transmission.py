@@ -18,7 +18,7 @@ class telescope_transmission(object):
         self.y = np.linspace(y_min, y_max, num_points)
         self.xx, self.yy = np.meshgrid(self.x, self.y)
 
-    def filter_with_Gaussian(self, pwv_matrix, beam_radius = 5.):
+    def filter_with_Gaussian(self, pwv_matrix, gridsize, beam_radius = 5.):
         """filteres the pwv_matrix from use_ARIS with a Gaussian beam.
 
         Returns
@@ -29,6 +29,7 @@ class telescope_transmission(object):
         """
         std = np.sqrt((beam_radius**2) / (2.0*np.log(10)))
         truncate = beam_radius/std
+        pwv_matrix = pwv_matrix * gridsize
         filtered_pwv_matrix = gaussian_filter(pwv_matrix, std, mode='mirror', truncate=truncate)
         return filtered_pwv_matrix
 

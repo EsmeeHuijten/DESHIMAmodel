@@ -4,9 +4,11 @@ This module allows users to execute funtioncs in signal_transmitter, while provi
 
 
 import numpy as np
-#import signal_transmitter as st
-from . import signal_transmitter as st
-from .DESHIMA.MKID import filterbank as ft
+import signal_transmitter as st
+import DESHIMA.MKID.filterbank as ft
+
+#from . import signal_transmitter as st
+#from .DESHIMA.MKID import filterbank as ft
 import os
 
 def calcMaxObsTime(dictionary):

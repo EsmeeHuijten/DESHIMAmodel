@@ -44,8 +44,6 @@ Inputs include:
 **EL** (*float*): The elevation of the telescope, in degrees
 **EL_vec** (*vector of floats*): If this parameter is set, it allows to specify the elevation of the telescope in degrees per timestep, for example in the case of tracking a target. Vector must have a length of 160Hz times obs_time.
 **obs_time** (*float*): The observation time. This parameter has to be smaller than **max_obs_time**, which is calculated using the windspeed and the total length of the strips of atmosphere data, in s.
-**draw_filters** (*list*): List of the filters that need to be plotted in the final plot (starts counting at 1, NOT 0). For example, if draw_filters = [1, 2], the first and the second filter are plotted, and if draw_filters = [1, 347], the first and the last filter are plotted. 
-**save_name_plot** (*string*): The name with which the produced plot is saved.to *.Data/output_DESHIMA_model/*. The center frequencies of the filters are saved as *save_name_data_F.npy* and the sky temperature matrix is saved as *save_name_data_T.npy*
 
 ### Instrument
 **F_min** (*float*): Lowest center frequency of all the MKIDs.

@@ -14,7 +14,7 @@ class use_ARIS(object):
     a = 6.3003663 #m
     h = 1000 #m
 
-    def __init__(self, x_length_strip, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, separation, loadCompletePwvMap = 0):
+    def __init__(self, x_length_strip, sourcepath, prefix_filename, pwv_0, grid, windspeed, time, max_num_strips, separation, beam_radius, loadCompletePwvMap = 0):
         #make function to convert EPL to pwv
         self.pwv_0 = pwv_0
         self.prefix_filename = prefix_filename
@@ -25,6 +25,7 @@ class use_ARIS(object):
         self.x_length_strip = x_length_strip
         self.filtered_pwv_matrix = "None"
         self.separation = separation
+        self.beam_radius = beam_radius
         if loadCompletePwvMap:
             self.load_complete_pwv_map()
         else:
@@ -82,6 +83,8 @@ class use_ARIS(object):
         max_distance = (time*self.windspeed + 2*self.separation)
         max_x_index = math.ceil(max_distance/self.grid)
         num_strips = min(math.ceil(max_x_index/self.x_length_strip), self.max_num_strips)
+        grid_dif = int(round(self.separation/self.grid))
+        dEPL_size = int(round(self.beam_radius/self.grid))+2*grid_dif
         #print('Number of atmosphere strips loaded: ', num_strips)
         for i in range(num_strips):
             filename = self.prefix_filename + (3-len(str(i))) * "0" + str(i)
@@ -95,9 +98,9 @@ class use_ARIS(object):
             for j in range(len(d)):
                 epl[int(d[j, 0])-int(d[0, 0]), int(d[j, 1])] = int(d[j, 2])
             if i == 0:
-                self.dEPL_matrix = epl[:, 0:30]
+                self.dEPL_matrix = epl[:, 0:dEPL_size]
             else:
-                self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:30]), axis = 0)
+                self.dEPL_matrix = np.concatenate((self.dEPL_matrix, epl[:, 0:dEPL_size]), axis = 0)
         self.pwv_matrix = self.pwv_0 + (1/self.a * self.dEPL_matrix*1e-6)*1e3 #in mm
         self.pwv_matrix = np.array(self.pwv_matrix)
 
@@ -112,7 +115,6 @@ class use_ARIS(object):
             Unit: m
         """
         pwv_matrix = self.filtered_pwv_matrix
-        length_x = pwv_matrix.shape[0]
         positions = self.calc_coordinates(time, windspeed)
         pwv = np.array([pwv_matrix[positions[0]], pwv_matrix[positions[1]], pwv_matrix[positions[2]], pwv_matrix[positions[3]], pwv_matrix[positions[4]]])
         return pwv
@@ -130,7 +132,7 @@ class use_ARIS(object):
         grid_dif = int(round(self.separation/self.grid)) #number of gridpoints difference between positions
         distance = time*windspeed
         x_index = (int(round(distance/self.grid)))
-        y_index = 14 #15th value, 3 m above the bottom of the map
+        y_index = int(round(self.beam_radius/self.grid))+grid_dif - 1#int(23/self.grid)-1 #23m, the -1 is to be in accordance with python array indexing
         pos_1 = x_index, y_index
         pos_2 = (x_index + grid_dif), y_index
         pos_3 = (x_index + 2*grid_dif), y_index
