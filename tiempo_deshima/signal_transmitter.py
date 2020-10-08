@@ -23,6 +23,13 @@ import Telescope.telescope_transmission as tt
 import DESHIMA.use_desim as use_desim
 import DESHIMA.MKID.photon_noise as pn
 
+def unwrap_processInput_vec(st1, i, aris_instance, use_desim_instance, time_step, count):
+    """
+    Wrapper function for processInput, in order to avoid bugs with joblib.parallel
+    """
+    if st1.vecmode: st1.EL = st1.EL_vec[i]
+    return st1.processInput(i=i, aris_instance=aris_instance, use_desim_instance=use_desim_instance, time_step=time_step, count=count)
+
 def unwrap_processInput(st1, i, aris_instance, use_desim_instance, time_step, count):
     """
     Wrapper function for processInput, in order to avoid bugs with joblib.parallel
@@ -125,7 +132,6 @@ class signal_transmitter(object):
         """
         pwv_values = aris_instance.obt_pwv(time_step, count, self.windspeed)
         # pwv_values = np.ones([5, 1]) # to test without atmosphere fluctuations
-        if self.vecmode: self.EL = self.EL_vec[i]
         [results_desim, self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[0:4]
         # Calculate the power from psd_KID
         first_dif = self.bin_centres[1] - self.bin_centres[0]
@@ -188,31 +194,50 @@ class signal_transmitter(object):
 
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
-        for l in range(0, self.n_batches, 1):
-            step_round = math.floor(self.num_samples/self.n_batches)
-            inputs = range(l * step_round, (l+1) * step_round)
-            power_matrix = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
-            power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-            for j in range(step_round):
-                power_matrix_res[:, :, j] = power_matrix[j]
-            #T calculation
-            if self.save_T:
-                T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                for k in range(power_matrix[0].shape[0]):
-                    if self.vecmode:
+        if self.vecmode:
+            for l in range(0, self.n_batches, 1):
+                step_round = math.floor(self.num_samples/self.n_batches)
+                inputs = range(l * step_round, (l+1) * step_round)
+                power_matrix = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput_vec)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
+                power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                for j in range(step_round):
+                    power_matrix_res[:, :, j] = power_matrix[j]
+                    #T calculation
+                if self.save_T:
+                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                    for k in range(power_matrix[0].shape[0]):
                         for i in range(step_round):
                             self.EL = self.EL_vec[inputs[i]]
                             T_sky_matrix[k, :, i] = self.convert_P_to_Tsky(power_matrix_res[k,:,i], self.filters)
-                    else:
+                    path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
+                    np.save(path_T, np.array(T_sky_matrix))
+                    del T_sky_matrix
+                #save P
+                if self.save_P:
+                    path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
+                    np.save(path_P, np.array(power_matrix_res))
+                    del power_matrix, power_matrix_res
+        else:
+            for l in range(0, self.n_batches, 1):
+                step_round = math.floor(self.num_samples/self.n_batches)
+                inputs = range(l * step_round, (l+1) * step_round)
+                power_matrix = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
+                power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                for j in range(step_round):
+                    power_matrix_res[:, :, j] = power_matrix[j]
+                #T calculation
+                if self.save_T:
+                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                    for k in range(power_matrix[0].shape[0]):
                         T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
-                path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
-                np.save(path_T, np.array(T_sky_matrix))
-                del T_sky_matrix
-            #save P
-            if self.save_P:
-                path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
-                np.save(path_P, np.array(power_matrix_res))
-            del power_matrix, power_matrix_res
+                    path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
+                    np.save(path_T, np.array(T_sky_matrix))
+                    del T_sky_matrix
+                #save P
+                if self.save_P:
+                    path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
+                    np.save(path_P, np.array(power_matrix_res))
+                del power_matrix, power_matrix_res
         return [time_vector, self.filters]
 
     def convert_P_to_Tsky(self, power_matrix, filters):

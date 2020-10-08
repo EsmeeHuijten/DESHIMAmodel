@@ -569,7 +569,7 @@ def T_from_psd(
         F = F.reshape([F.shape[0], 1])
     if method == 'Planck':
         T = h*F/(k*np.log(h*F/psd+1.))
-    elif method is 'Rayleigh-Jeans':
+    elif method == 'Rayleigh-Jeans':
         T = psd / k
     else:
         sys.exit("Error: Method should be Planck or Rayleigh-Jeans.")
