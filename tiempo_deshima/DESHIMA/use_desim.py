@@ -75,7 +75,7 @@ class use_desim(object):
         EL = signal_instance.EL
         D1 = signal_instance.D1
         pwv_values_no_gal = np.array([pwv_value[0], pwv_value[2], pwv_value[3], pwv_value[4]])
-        pwv_value_gal = np.array([pwv_value[1]])
+        pwv_value_gal = np.array([pwv_value[0], pwv_value[1]])
         F_filters = signal_instance.filters
         margin = 10e9
         # F_bins_Lor = np.logspace(np.log10(F_min-margin), np.log10(F_max + margin), num_bins_Lor)

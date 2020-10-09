@@ -104,17 +104,6 @@ class signal_transmitter(object):
         self.n_batches = input['n_batches']
         self.separation = input['separation']
 
-    def save_filtered_pwv_map(self):
-        """
-        This function loads in all atmosphere strips, takes the part of them
-        that is needed for the simulation, glues them together and filters them
-        with a Gaussian filter. The file is saved in the './Data/output_ARIS/'
-        directory with name filename.
-        """
-        aris_instance = use_aris.use_ARIS(self.x_length_strip, self.sourcepath, self.prefix_atm_data, self.pwv_0,  self.grid, self.windspeed, self.time, 40, self.separation, self.beam_radius)
-        tt_instance = tt.telescope_transmission()
-        aris_instance.filtered_pwv_matrix = tt_instance.filter_with_Gaussian(aris_instance.pwv_matrix, self.grid, self.beam_radius)
-        return aris_instance.dEPL_matrix, aris_instance.pwv_matrix, aris_instance.filtered_pwv_matrix
 
     def processInput(self, i, aris_instance, use_desim_instance, time_step, count):
         """

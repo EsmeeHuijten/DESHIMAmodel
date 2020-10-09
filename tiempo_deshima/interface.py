@@ -24,23 +24,6 @@ def calcMaxObsTime(dictionary):
                     /dictionary['windspeed']
     return max_obs_time
 
-def change_pwv_0(dictionary):
-    """
-    Parameters
-    ----------
-    dictionary : dict
-        Dictionary obtained from get_dictionary() with the same keywords as run_tiempo() executed after this function. 
-
-    Returns
-    -------
-    None.
-    
-    Must be executed before changing the pwv value. Input is a dictionary from get_dictionary
-    """
-    st1 = st.signal_transmitter(dictionary)
-    st1.save_filtered_pwv_map()
-    return
-
 def new_filterbank(dictionary):
     """
     Parameters

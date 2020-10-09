@@ -66,15 +66,6 @@ Inputs include:
 
 ### Atmosphere
 * All atmosphere strips must have the same length in the x direction and a length in the y direction of at least 30 gridpoints. ('length' means number of gridpoints, *not* distance in meters)
-* If **pwv_0** is changed, ```change_pwv_0()``` needs to be run with the same input dictionary as ```run_tiempo()``` before executing ```run_tiempo``` again. This can be done easily by generating the dictionary using ```get_dictionary``` with the same arguments as ```run_tiempo()```. 
-
-#### Example of changing the atmosphere data:
-**Don't forget to supply the location of the new ARIS data**
-```
-dict = tiempo_deshima.get_dictionary(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
-tiempo_deshima.change_pwv_0(dict)
-time_vector, center_freq = tiempo_deshima.run_tiempo(input_dictionary = 'deshima_2', prefix_atm_data = 'aris.dat-', sourcefolder = '../Data/new_output_ARIS', save_name_data = 'TiEMPO_simulation_new_pwv')
-```
 
 ### Changing the number of filters or the distribution of the center frequencies of the filters
 * For each filter, an interpolation between the power and the sky temperature is made. This means that these interpolations need to be made and saved again if the center frequencies of the filters are changed, before TiEMPO can be run again. This can be done by using ```new_filterbank()``` with the desired input dictionary, which can be generated using ```get_dictionary()```.
