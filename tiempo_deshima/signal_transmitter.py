@@ -179,7 +179,8 @@ class signal_transmitter(object):
         #Galaxy
         self.frequency_gal, spectrum_gal = galspec.spectrum(self.luminosity, self.redshift, self.F_min/1e9, self.F_max/1e9, self.num_bins,self.linewidth, mollines = 'False')
         Ae = dsm.calc_eff_aper(self.frequency_gal*1e9, self.beam_radius) #1e9 added to convert the f to Hz
-        self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5
+        #self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5 STEFANIE
+        self.psd_gal = 0
 
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
