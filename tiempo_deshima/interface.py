@@ -322,5 +322,5 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
         raise ValueError('obs_time must be smaller than: ', max_obs_time)
     
     st1 = st.signal_transmitter(dictionary)
-    [time_vector, center_freq, pwv] = st1.transmit_signal_DESIM_multf_atm()
-    return time_vector, center_freq, pwv
+    [time_vector, center_freq] = st1.transmit_signal_DESIM_multf_atm()
+    return time_vector, center_freq

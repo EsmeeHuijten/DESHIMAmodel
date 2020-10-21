@@ -121,18 +121,18 @@ class signal_transmitter(object):
         """
         pwv_values = aris_instance.obt_pwv(time_step, count, self.windspeed)
         # pwv_values = np.ones([5, 1]) # to test without atmosphere fluctuations
-        # [results_desim, self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[0:4]
-        # # Calculate the power from psd_KID
-        # first_dif = self.bin_centres[1] - self.bin_centres[0]
-        # last_dif = self.bin_centres[-1] - self.bin_centres[-2]
-        # # delta_F = np.concatenate((np.array([0.]), np.logspace(np.log10(first_dif), np.log10(last_dif), self.num_bins-1)))
-        # delta_F = first_dif
-        # self.P_bin_centres = self.psd_bin_centres * delta_F #matrix, power
-        # noise_signal = pn.photon_noise(self.P_bin_centres, self.bin_centres, delta_F, self.sampling_rate)
-        # signal_matrix = noise_signal.calcTimeSignalBoosted(atm = 1)
-        # power_matrix_column = np.sum(signal_matrix, axis=2)
-        return pwv_values
-    
+        [results_desim, self.bin_centres, self.psd_bin_centres, filters] = use_desim_instance.transmit_through_DESHIMA(self, pwv_values)[0:4]
+        # Calculate the power from psd_KID
+        first_dif = self.bin_centres[1] - self.bin_centres[0]
+        last_dif = self.bin_centres[-1] - self.bin_centres[-2]
+        # delta_F = np.concatenate((np.array([0.]), np.logspace(np.log10(first_dif), np.log10(last_dif), self.num_bins-1)))
+        delta_F = first_dif
+        self.P_bin_centres = self.psd_bin_centres * delta_F #matrix, power
+        noise_signal = pn.photon_noise(self.P_bin_centres, self.bin_centres, delta_F, self.sampling_rate)
+        signal_matrix = noise_signal.calcTimeSignalBoosted(atm = 1)
+        power_matrix_column = np.sum(signal_matrix, axis=2)
+        return power_matrix_column
+
     def transmit_signal_DESIM_multf_atm(self):
         """
         This function transmits the signal through the final version of the
@@ -188,48 +188,48 @@ class signal_transmitter(object):
             for l in range(0, self.n_batches, 1):
                 step_round = math.floor(self.num_samples/self.n_batches)
                 inputs = range(l * step_round, (l+1) * step_round)
-                pwv = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput_vec)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
-                # power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                # for j in range(step_round):
-                #     power_matrix_res[:, :, j] = power_matrix[j]
-                #     #T calculation
-                # if self.save_T:
-                #     T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                #     for k in range(power_matrix[0].shape[0]):
-                #         for i in range(step_round):
-                #             self.EL = self.EL_vec[inputs[i]]
-                #             T_sky_matrix[k, :, i] = self.convert_P_to_Tsky(power_matrix_res[k,:,i], self.filters)
-                #     path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
-                #     np.save(path_T, np.array(T_sky_matrix))
-                #     del T_sky_matrix
-                # #save P
-                # if self.save_P:
-                #     path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
-                #     np.save(path_P, np.array(power_matrix_res))
-                #     del power_matrix, power_matrix_res
+                power_matrix = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput_vec)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
+                power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                for j in range(step_round):
+                    power_matrix_res[:, :, j] = power_matrix[j]
+                    #T calculation
+                if self.save_T:
+                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                    for k in range(power_matrix[0].shape[0]):
+                        for i in range(step_round):
+                            self.EL = self.EL_vec[inputs[i]]
+                            T_sky_matrix[k, :, i] = self.convert_P_to_Tsky(power_matrix_res[k,:,i], self.filters)
+                    path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
+                    np.save(path_T, np.array(T_sky_matrix))
+                    del T_sky_matrix
+                #save P
+                if self.save_P:
+                    path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
+                    np.save(path_P, np.array(power_matrix_res))
+                    del power_matrix, power_matrix_res
         else:
             for l in range(0, self.n_batches, 1):
                 step_round = math.floor(self.num_samples/self.n_batches)
                 inputs = range(l * step_round, (l+1) * step_round)
-                pwv = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
-                # power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                # for j in range(step_round):
-                #     power_matrix_res[:, :, j] = power_matrix[j]
-                # #T calculation
-                # if self.save_T:
-                #     T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                #     for k in range(power_matrix[0].shape[0]):
-                #         T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
-                #     path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
-                #     np.save(path_T, np.array(T_sky_matrix))
-                #     del T_sky_matrix
-                # #save P
-                # if self.save_P:
-                #     path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
-                #     np.save(path_P, np.array(power_matrix_res))
-                # del power_matrix, power_matrix_res
-        return [time_vector, self.filters, pwv]
-    
+                power_matrix = Parallel(n_jobs=self.n_jobs,backend = 'threading')(delayed(unwrap_processInput)(self, i, aris_instance, use_desim_instance, time_vector[i], i) for i in inputs)
+                power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                for j in range(step_round):
+                    power_matrix_res[:, :, j] = power_matrix[j]
+                #T calculation
+                if self.save_T:
+                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                    for k in range(power_matrix[0].shape[0]):
+                        T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
+                    path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
+                    np.save(path_T, np.array(T_sky_matrix))
+                    del T_sky_matrix
+                #save P
+                if self.save_P:
+                    path_P = self.save_path.joinpath(self.save_name_data + "_P_" + str(l))
+                    np.save(path_P, np.array(power_matrix_res))
+                del power_matrix, power_matrix_res
+        return [time_vector, self.filters]
+
     def convert_P_to_Tsky(self, power_matrix, filters):
         """
         This function converts an array with power values to an array with sky
