@@ -71,32 +71,10 @@ class signal_transmitter(object):
         self.D1 = input['D1']
         self.n_jobs = input['n_jobs']
         self.path_model = Path(__file__).parent
-        if input['savefolder'] == None:
-            self.save_path = Path.cwd().joinpath('output_TiEMPO')
-        else:
-            folder = input['savefolder']
-            folder = folder.strip('/')
-            folder = folder.strip('\\')
-            self.save_path = Path(input['savefolder'])
-            self.savepath = Path.cwd()
-            while folder.startswith('.'):
-                folder = folder.strip('.')
-                folder = folder.strip('/')
-                folder = folder.strip('\\')
-                self.savepath = self.savepath.parent
-            self.savepath = self.savepath.joinpath(folder)
+        self.save_path = input['savefolder']
         if Path.exists(self.save_path) == False:
             self.save_path.mkdir(parents = True)
-        folder = input['sourcefolder']
-        folder = folder.strip('/')
-        folder = folder.strip('\\')
-        self.sourcepath = Path.cwd()
-        while folder.startswith('.'):
-            folder = folder.strip('.')
-            folder = folder.strip('/')
-            folder = folder.strip('\\')
-            self.sourcepath = self.sourcepath.parent
-        self.sourcepath = self.sourcepath.joinpath(folder)
+        self.sourcepath = input['sourcefolder']
         self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
         F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
         self.filters = F
