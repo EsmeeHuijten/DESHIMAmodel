@@ -55,7 +55,7 @@ def new_filterbank(dictionary):
 
 def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder, save_P=True, save_T=True, n_jobs = 30, n_batches = 8,\
                    obs_time = 2., grid = .2, x_length_strip = 65536., separation = 1.1326,\
-                   luminosity = 13.7, redshift = 4.43, linewidth = 600, \
+                   galaxy_on = True, luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, EL_vec = None, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
                    num_bins = 1500, spec_res = 500, f_spacing = 500, \
                    num_filters = 347, beam_radius = 5., useDESIM = 1, \
@@ -90,6 +90,8 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
         The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536.
     separation : float, optional
         Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
+    galaxy_on : bool, optional
+        Determines whether there is a galaxy in the center position. The default is True.
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -125,7 +127,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     D1 : int, optional
         1 or 0. Determines whether DESHIMA 1.0 is simulated. The default is 0.
     dictionary_name : string, optional
-        name of a txt file in which the values of optional keywords are saved. prefix_atm_data, sourcefolder, save_name_data, savefolder, n_jobs, save_P, save_T and EL_vec must still be set outside the file. Only used when input_dictionary is set to 'path'. The default is ''. Order of the entries in the txt file must be: F_min, num_bins, spec_res, f_spacing, num_filters, beam_radius, useDESIM, inclAtmosphere, D1, time, grid, x_length_strip, luminosity, redshift, linewidth, EL, max_num_strips, pwv_0, windspeed, n_batches.
+        name of a txt file in which the values of optional keywords are saved. prefix_atm_data, sourcefolder, save_name_data, savefolder, n_jobs, save_P, save_T and EL_vec must still be set outside the file. Only used when input_dictionary is set to 'path'. The default is ''. Order of the entries in the txt file must be: F_min, num_bins, spec_res, f_spacing, num_filters, beam_radius, useDESIM, inclAtmosphere, D1, time, grid, x_length_strip, galaxy_on, luminosity, redshift, linewidth, EL, max_num_strips, pwv_0, windspeed, n_batches.
 
     Returns
     -------
@@ -185,14 +187,15 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
             'grid':d[10],
             'x_length_strip':d[11],
             'separation':d[12],
-            'luminosity':d[13],
-            'redshift':d[14],
-            'linewidth':d[15],
-            'EL':d[16],
-            'max_num_strips':d[17],
-            'pwv_0':d[18],
-            'windspeed':d[19],
-            'n_batches':d[20],
+            'galaxy_on':d[13],
+            'luminosity':d[14],
+            'redshift':d[15],
+            'linewidth':d[16],
+            'EL':d[17],
+            'max_num_strips':d[18],
+            'pwv_0':d[19],
+            'windspeed':d[20],
+            'n_batches':d[21],
             'save_P': save_P,
             'save_T': save_T,
             'prefix_atm_data':prefix_atm_data,
@@ -208,6 +211,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     dictionary['prefix_atm_data']= prefix_atm_data
     dictionary['grid']= grid
     dictionary['x_length_strip']= float(x_length_strip)
+    dictionary['galaxy_on'] = galaxy_on
     dictionary['luminosity']= luminosity
     dictionary['redshift']= redshift
     dictionary['linewidth']= linewidth
@@ -227,7 +231,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
 
 def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder = None, save_P=True, save_T=True, n_jobs = 30, n_batches = 8,\
                    obs_time = 3600., grid = .2, x_length_strip = 65536., separation = 1.1326,\
-                   luminosity = 13.7, redshift = 4.43, linewidth = 600, \
+                   galaxy_on = True, luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, EL_vec=None, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
                    num_bins = 1500, spec_res = 500, f_spacing = 500, \
                    num_filters = 347, beam_radius = 5., useDESIM = 1, \
@@ -261,6 +265,8 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
         The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536.
     separation : float, optional
         Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
+    galaxy_on : bool, optional
+        Determines whether there is a galaxy in the center position. The default is True.
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -312,7 +318,7 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     """
     dictionary = get_dictionary(input_dictionary, prefix_atm_data, sourcefolder,\
                                 save_name_data, savefolder, save_P, save_T, n_jobs, n_batches, obs_time, grid, \
-                                x_length_strip, separation,luminosity, redshift, \
+                                x_length_strip, separation, galaxy_on,luminosity, redshift, \
                                 linewidth, EL, EL_vec, max_num_strips, pwv_0, F_min, \
                                 num_bins, spec_res, f_spacing, num_filters, \
                                 beam_radius, useDESIM, inclAtmosphere, \

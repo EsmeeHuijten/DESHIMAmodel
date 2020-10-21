@@ -131,7 +131,7 @@ class use_ARIS(object):
         """
         grid_dif = int(round(self.separation/self.grid)) #number of gridpoints difference between positions
         distance = time*windspeed
-        x_index = (int(round(distance/self.grid)))
+        x_index = int(round(distance/self.grid))
         y_index = int(round(self.beam_radius/self.grid))+grid_dif - 1#int(23/self.grid)-1 #23m, the -1 is to be in accordance with python array indexing
         pos_1 = x_index, y_index
         pos_2 = (x_index + grid_dif), y_index

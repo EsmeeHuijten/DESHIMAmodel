@@ -57,6 +57,7 @@ class signal_transmitter(object):
         self.beam_radius = input['beam_radius']
         self.useDESIM = input['useDESIM']
         self.inclAtmosphere = input['inclAtmosphere']
+        self.galaxy_on = input['galaxy_on']
         self.luminosity = input['luminosity']
         self.redshift = input['redshift']
         self.linewidth = input['linewidth']
@@ -180,6 +181,7 @@ class signal_transmitter(object):
         self.frequency_gal, spectrum_gal = galspec.spectrum(self.luminosity, self.redshift, self.F_min/1e9, self.F_max/1e9, self.num_bins,self.linewidth, mollines = 'False')
         Ae = dsm.calc_eff_aper(self.frequency_gal*1e9, self.beam_radius) #1e9 added to convert the f to Hz
         self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5
+        if self.galaxy_on: self.psd_gal = 0
 
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
