@@ -6,6 +6,7 @@ This module allows users to execute funtioncs in signal_transmitter, while provi
 import numpy as np
 import signal_transmitter as st
 import DESHIMA.MKID.filterbank as ft
+from pathlib import Path
 
 #from . import signal_transmitter as st
 #from .DESHIMA.MKID import filterbank as ft
@@ -24,6 +25,24 @@ def calcMaxObsTime(dictionary):
                     /dictionary['windspeed']
     return max_obs_time
 
+def convert_folder(folder):
+    folder = folder.strip('/')
+    folder = folder.strip('\\')
+    sourcepath = Path.cwd()
+    while folder.startswith('.'):
+        folder = folder.strip('.')
+        folder = folder.strip('/')
+        folder = folder.strip('\\')
+        sourcepath = sourcepath.parent
+    sourcepath = sourcepath.joinpath(folder)
+    return sourcepath
+
+def convert_grid(dictionary):
+    length_m = dictionary['x_length_strip'] * dictionary['grid']
+    dictionary['grid'] = dictionary['separation'] / 5.0
+    dictionary['x_length_strip'] = length_m / dictionary['grid']
+    return dictionary
+
 def new_filterbank(dictionary):
     """
     Parameters
@@ -37,6 +56,13 @@ def new_filterbank(dictionary):
 
     Must be executed when the filter properties are changed.
     """
+    if dictionary['savefolder'] == None:
+        dictionary['savefolder'] = Path.cwd().joinpath('output_TiEMPO')
+    else:
+        dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
+    dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
+    dictionary = convert_grid(dictionary)
+    
     length_EL_vector = 25
     length_pwv_vector = 25
 
@@ -258,7 +284,7 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     n_batches : int
         number of batches the entire observation is divided up into. Default is 8.
     obs_time : float, optional
-        Length of the observation in seconds. The default is 2..
+        Length of the observation in seconds. The default is 2.0.
     grid : float, optional
         The width of a grid square in the atmosphere map in meters. The default is .2.
     x_length_strip : int, optional
@@ -323,9 +349,20 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
                                 num_bins, spec_res, f_spacing, num_filters, \
                                 beam_radius, useDESIM, inclAtmosphere, \
                                 windspeed, D1, dictionary_name)
+    if dictionary['savefolder'] == None:
+        dictionary['savefolder'] = Path.cwd().joinpath('output_TiEMPO')
+    else:
+        dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
+    dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
+    dictionary = convert_grid(dictionary)
+    
     max_obs_time = calcMaxObsTime(dictionary)
     if obs_time > max_obs_time:
         raise ValueError('obs_time must be smaller than: ', max_obs_time)
+    
+    num_steps = dictionary['separation'] / (dictionary['windspeed']/160)
+    if round(num_steps) != num_steps:
+        raise ValueError('Separation is not an integer multiple of atmosphere distance per sample. Consider changing the windspeed to {} m/s or {} m/s instead of {} m/s'.format(dictionary['separation']*160/np.ceil(num_steps), dictionary['separation']*160/np.floor(num_steps), dictionary['windspeed']))
     
     st1 = st.signal_transmitter(dictionary)
     [time_vector, center_freq] = st1.transmit_signal_DESIM_multf_atm()
