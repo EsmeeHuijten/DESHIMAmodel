@@ -232,7 +232,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
             'EL_vec': EL_vec
         }
         return dictionary
-    dictionary['n_jobs'] = n_jobs
+    dictionary['n_jobs'] = int(n_jobs)
     dictionary['time'] = obs_time
     dictionary['prefix_atm_data']= prefix_atm_data
     dictionary['grid']= grid
@@ -251,7 +251,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     dictionary['EL_vec'] = EL_vec
     dictionary['save_P'] = save_P
     dictionary['save_T'] = save_T
-    dictionary['n_batches'] = n_batches
+    dictionary['n_batches'] = int(n_batches)
     dictionary['separation'] = separation
     return dictionary
 
@@ -363,6 +363,12 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     num_steps = dictionary['separation'] / (dictionary['windspeed']/160)
     if round(num_steps) != num_steps:
         raise ValueError('Separation is not an integer multiple of atmosphere distance per sample. Consider changing the windspeed to {} m/s or {} m/s instead of {} m/s'.format(dictionary['separation']*160/np.ceil(num_steps), dictionary['separation']*160/np.floor(num_steps), dictionary['windspeed']))
+    
+    if dictionary['n_jobs'] < 1:
+        raise ValueError('Please set a number of threads greater than or equal to 1 in n_jobs.')
+    
+    if dictionary['n_batches'] < 1:
+        raise ValueError('Please set a number of signal batches greater than or equal to 1 in n_batches.')
     
     st1 = st.signal_transmitter(dictionary)
     [time_vector, center_freq] = st1.transmit_signal_DESIM_multf_atm()
