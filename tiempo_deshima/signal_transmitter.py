@@ -83,7 +83,14 @@ class signal_transmitter(object):
         self.n_batches = input['n_batches']
         self.separation = input['separation']
 
-
+    def rolldata(self, data):
+        sampdiff = int(self.sampling_rate*self.separation/self.windspeed)
+        data[0,:,:] = np.roll(data[0,:,:], -sampdiff, axis = 1)
+        data[2,:,:] = np.roll(data[2,:,:], sampdiff, axis = 1)
+        data = data[:,:,sampdiff:-sampdiff]
+        return data
+        
+        
     def processInput(self, i, aris_instance, use_desim_instance, time_step, count):
         """
         This function gets the right values of the pwv and then transmits the signal
@@ -174,8 +181,9 @@ class signal_transmitter(object):
                 for j in range(step_round):
                     power_matrix_res[:, :, j] = power_matrix[j]
                     #T calculation
+                power_matrix_res = self.rolldata(power_matrix_res)
                 if self.save_T:
-                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                    T_sky_matrix = np.zeros(power_matrix_res.shape)
                     for k in range(power_matrix[0].shape[0]):
                         for i in range(step_round):
                             self.EL = self.EL_vec[inputs[i]]
@@ -196,10 +204,11 @@ class signal_transmitter(object):
                 power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
                 for j in range(step_round):
                     power_matrix_res[:, :, j] = power_matrix[j]
+                power_matrix_res = self.rolldata(power_matrix_res)
                 #T calculation
                 if self.save_T:
-                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                    for k in range(power_matrix[0].shape[0]):
+                    T_sky_matrix = np.zeros(power_matrix_res.shape)
+                    for k in range(power_matrix_res.shape[0]):
                         T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
                     path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
                     np.save(path_T, np.array(T_sky_matrix))

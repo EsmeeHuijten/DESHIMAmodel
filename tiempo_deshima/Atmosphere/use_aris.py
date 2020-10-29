@@ -116,7 +116,8 @@ class use_ARIS(object):
         """
         pwv_matrix = self.filtered_pwv_matrix
         positions = self.calc_coordinates(time, windspeed)
-        pwv = np.array([pwv_matrix[positions[0]], pwv_matrix[positions[1]], pwv_matrix[positions[2]], pwv_matrix[positions[3]], pwv_matrix[positions[4]]])
+        #pwv = np.array([pwv_matrix[positions[0]], pwv_matrix[positions[1]], pwv_matrix[positions[2]], pwv_matrix[positions[3]], pwv_matrix[positions[4]]]) TB
+        pwv = np.array([pwv_matrix[positions[0]], pwv_matrix[positions[1]], pwv_matrix[positions[2]], pwv_matrix[positions[3]]])
         return pwv
 
     def calc_coordinates(self, time, windspeed):
@@ -133,11 +134,13 @@ class use_ARIS(object):
         distance = time*windspeed
         x_index = (int(round(distance/self.grid)))
         y_index = int(round(self.beam_radius/self.grid))+grid_dif - 1#int(23/self.grid)-1 #23m, the -1 is to be in accordance with python array indexing
-        pos_1 = x_index, y_index
-        pos_2 = (x_index + grid_dif), y_index
-        pos_3 = (x_index + 2*grid_dif), y_index
-        pos_4 = (x_index + grid_dif), y_index + grid_dif
-        pos_5 = (x_index + grid_dif), y_index - grid_dif
-        positions = [pos_1, pos_2, pos_3, pos_4, pos_5]
+        pos_1 = x_index + grid_dif, y_index
+        pos_2 = x_index + grid_dif, y_index
+        pos_3 = x_index + grid_dif, y_index
+        pos_4 = x_index + grid_dif, y_index
+        #pos_4 = x_index + grid_dif, y_index + grid_dif #TB
+        #pos_5 = x_index + grid_dif, y_index - grid_dif
+        #positions = [pos_1, pos_2, pos_3, pos_4, pos_5]
+        positions = [pos_1, pos_2, pos_3, pos_4]
         return positions
 
