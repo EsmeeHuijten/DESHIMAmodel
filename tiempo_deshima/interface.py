@@ -117,7 +117,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     separation : float, optional
         Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
     galaxy_on : bool, optional
-        Determines whether there is a galaxy in the center position. The default is True.
+        Determines whether there is a galaxy in position 2. The default is True.
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -292,7 +292,7 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     separation : float, optional
         Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
     galaxy_on : bool, optional
-        Determines whether there is a galaxy in the center position. The default is True.
+        Determines whether there is a galaxy in position 2. T The default is True.
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional

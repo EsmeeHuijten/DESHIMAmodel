@@ -13,7 +13,12 @@ The model outputs the following data:
 4. Center frequencies of the filters: The center frequencies of the filters in the filterbank in the MKID chip in Hz. 
 
 The pwv values are taken in the following order: 
-![pwv values](https://raw.githubusercontent.com/EsmeeHuijten/DESHIMAmodel/master/skychopping_5chops.png)
+![pwv values](https://raw.githubusercontent.com/Stefanie-B/DESHIMAmodel/master/skychopping.png)
+1. Left position
+2. Center position with galaxy
+3. Right position
+4. Center position without galaxy
+The pwv values in position 2 and position 4 are equal, but otherwise the sky temperatures are computed separately.
 
 ## Using the model
 ### Example
@@ -39,6 +44,7 @@ Inputs include:
 **redshift** (*float*): The redshift of the galaxy
 **linewidth** (*float*): The linewidth, in km/s
 **num_bins** (*int*): Determines the amount of bins used in the simulation of the galaxy spectrum. 
+**galaxy_on** (*bool*): Can be used to turn the galaxy in position 2 off. Default is True (galaxy is present).
 
 ### Observation
 **EL** (*float*): The elevation of the telescope, in degrees
