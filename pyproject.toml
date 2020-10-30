@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "tiempo_deshima"
-version = "0.1.7"
+version = "0.1.8"
 description = "time-dependent end-to-end model for post-process optimization"
 authors = ["Esmee Huijten"]
 maintainers = ["Stefanie-B <s.a.brackenhoff@student.tudelft.nl>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/Stefanie-B/DESHIMAmodel"
+homepage = "https://github.com/deshima-dev/tiempo_deshima"
 
 [tool.poetry.dependencies]
 python = "^3.7"
