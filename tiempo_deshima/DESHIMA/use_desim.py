@@ -74,7 +74,8 @@ class use_desim(object):
         psd_gal = signal_instance.psd_gal
         EL = signal_instance.EL
         D1 = signal_instance.D1
-        pwv_values_no_gal = np.array([pwv_value[0], pwv_value[2], pwv_value[3], pwv_value[4]])
+        #pwv_values_no_gal = np.array([pwv_value[0], pwv_value[2], pwv_value[3], pwv_value[4]]) TB
+        pwv_values_no_gal = np.array([pwv_value[0], pwv_value[2], pwv_value[3]])
         pwv_value_gal = np.array([pwv_value[0], pwv_value[1]])
         F_filters = signal_instance.filters
         margin = 10e9
@@ -116,8 +117,9 @@ class use_desim(object):
         DESHIMA_transmitted_gal = dsm.spectrometer_sensitivity(**Desim_input) # takes a lot of time
         psd_co_no_gal = DESHIMA_transmitted_no_gal['psd_co'] #vector because of F
         psd_co_gal = DESHIMA_transmitted_gal['psd_co']
-        psd_co = np.zeros([num_bins_Lor, 5])
-        for i in range(0, 4):
+        #psd_co = np.zeros([num_bins_Lor, 5]) TB
+        psd_co = np.zeros([num_bins_Lor, 4])
+        for i in range(0, 3): #TB range(0,4)
             if i == 0:
                 psd_co[:, 0] = psd_co_no_gal[:, 0]
             else:

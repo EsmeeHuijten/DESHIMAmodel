@@ -27,9 +27,10 @@ class telescope_transmission(object):
             pwv matrix that has been filtered with a Gaussian
             Unit: m
         """
+        beam_radius = beam_radius/gridsize
         std = np.sqrt((beam_radius**2) / (2.0*np.log(10)))
         truncate = beam_radius/std
-        pwv_matrix = pwv_matrix * gridsize
+        pwv_matrix = pwv_matrix
         filtered_pwv_matrix = gaussian_filter(pwv_matrix, std, mode='mirror', truncate=truncate)
         return filtered_pwv_matrix
 

@@ -57,6 +57,7 @@ class signal_transmitter(object):
         self.beam_radius = input['beam_radius']
         self.useDESIM = input['useDESIM']
         self.inclAtmosphere = input['inclAtmosphere']
+        self.galaxy_on = input['galaxy_on']
         self.luminosity = input['luminosity']
         self.redshift = input['redshift']
         self.linewidth = input['linewidth']
@@ -70,32 +71,10 @@ class signal_transmitter(object):
         self.D1 = input['D1']
         self.n_jobs = input['n_jobs']
         self.path_model = Path(__file__).parent
-        if input['savefolder'] == None:
-            self.save_path = Path.cwd().joinpath('output_TiEMPO')
-        else:
-            folder = input['savefolder']
-            folder = folder.strip('/')
-            folder = folder.strip('\\')
-            self.save_path = Path(input['savefolder'])
-            self.savepath = Path.cwd()
-            while folder.startswith('.'):
-                folder = folder.strip('.')
-                folder = folder.strip('/')
-                folder = folder.strip('\\')
-                self.savepath = self.savepath.parent
-            self.savepath = self.savepath.joinpath(folder)
+        self.save_path = input['savefolder']
         if Path.exists(self.save_path) == False:
             self.save_path.mkdir(parents = True)
-        folder = input['sourcefolder']
-        folder = folder.strip('/')
-        folder = folder.strip('\\')
-        self.sourcepath = Path.cwd()
-        while folder.startswith('.'):
-            folder = folder.strip('.')
-            folder = folder.strip('/')
-            folder = folder.strip('\\')
-            self.sourcepath = self.sourcepath.parent
-        self.sourcepath = self.sourcepath.joinpath(folder)
+        self.sourcepath = input['sourcefolder']
         self.F_max = self.F_min * (1 + 1/self.f_spacing)**(self.num_filters - 1)
         F = np.logspace(np.log10(self.F_min), np.log10(self.F_max), self.num_filters)
         self.filters = F
@@ -104,7 +83,14 @@ class signal_transmitter(object):
         self.n_batches = input['n_batches']
         self.separation = input['separation']
 
-
+    def rolldata(self, data):
+        sampdiff = int(self.sampling_rate*self.separation/self.windspeed)
+        data[0,:,:] = np.roll(data[0,:,:], -sampdiff, axis = 1)
+        data[2,:,:] = np.roll(data[2,:,:], sampdiff, axis = 1)
+        data = data[:,:,sampdiff:-sampdiff]
+        return data
+        
+        
     def processInput(self, i, aris_instance, use_desim_instance, time_step, count):
         """
         This function gets the right values of the pwv and then transmits the signal
@@ -177,10 +163,13 @@ class signal_transmitter(object):
         self.eta_atm_func_zenith = dsm.eta_atm_interp(self.eta_atm_df)
 
         #Galaxy
-        self.frequency_gal, spectrum_gal = galspec.spectrum(self.luminosity, self.redshift, self.F_min/1e9, self.F_max/1e9, self.num_bins,self.linewidth, mollines = 'False')
-        Ae = dsm.calc_eff_aper(self.frequency_gal*1e9, self.beam_radius) #1e9 added to convert the f to Hz
-        self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5
-
+        self.frequency_gal, spectrum_gal = galspec.spectrum(self.luminosity, self.redshift, self.F_min/1e9-10, self.F_max/1e9+10, self.num_bins,self.linewidth, mollines = 'True')
+        if self.galaxy_on: 
+            Ae = dsm.calc_eff_aper(self.frequency_gal*1e9, self.beam_radius) #1e9 added to convert the f to Hz
+            self.psd_gal = spectrum_gal * Ae * 1e-26 * 0.5
+        else:
+            self.psd_gal = 0
+        
         #DESHIMA
         use_desim_instance = use_desim.use_desim()
         if self.vecmode:
@@ -192,8 +181,9 @@ class signal_transmitter(object):
                 for j in range(step_round):
                     power_matrix_res[:, :, j] = power_matrix[j]
                     #T calculation
+                power_matrix_res = self.rolldata(power_matrix_res)
                 if self.save_T:
-                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
+                    T_sky_matrix = np.zeros(power_matrix_res.shape)
                     for k in range(power_matrix[0].shape[0]):
                         for i in range(step_round):
                             self.EL = self.EL_vec[inputs[i]]
@@ -214,10 +204,11 @@ class signal_transmitter(object):
                 power_matrix_res = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
                 for j in range(step_round):
                     power_matrix_res[:, :, j] = power_matrix[j]
+                power_matrix_res = self.rolldata(power_matrix_res)
                 #T calculation
                 if self.save_T:
-                    T_sky_matrix = np.zeros([power_matrix[0].shape[0], self.num_filters, step_round])
-                    for k in range(power_matrix[0].shape[0]):
+                    T_sky_matrix = np.zeros(power_matrix_res.shape)
+                    for k in range(power_matrix_res.shape[0]):
                         T_sky_matrix[k, :, :] = self.convert_P_to_Tsky(power_matrix_res[k], self.filters)
                     path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
                     np.save(path_T, np.array(T_sky_matrix))

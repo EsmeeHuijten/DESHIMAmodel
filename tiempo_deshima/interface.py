@@ -6,6 +6,7 @@ This module allows users to execute funtioncs in signal_transmitter, while provi
 import numpy as np
 import signal_transmitter as st
 import DESHIMA.MKID.filterbank as ft
+from pathlib import Path
 
 #from . import signal_transmitter as st
 #from .DESHIMA.MKID import filterbank as ft
@@ -24,6 +25,24 @@ def calcMaxObsTime(dictionary):
                     /dictionary['windspeed']
     return max_obs_time
 
+def convert_folder(folder):
+    folder = folder.strip('/')
+    folder = folder.strip('\\')
+    sourcepath = Path.cwd()
+    while folder.startswith('.'):
+        folder = folder.strip('.')
+        folder = folder.strip('/')
+        folder = folder.strip('\\')
+        sourcepath = sourcepath.parent
+    sourcepath = sourcepath.joinpath(folder)
+    return sourcepath
+
+def convert_grid(dictionary):
+    length_m = dictionary['x_length_strip'] * dictionary['grid']
+    dictionary['grid'] = dictionary['separation'] / 5.0
+    dictionary['x_length_strip'] = length_m / dictionary['grid']
+    return dictionary
+
 def new_filterbank(dictionary):
     """
     Parameters
@@ -37,6 +56,13 @@ def new_filterbank(dictionary):
 
     Must be executed when the filter properties are changed.
     """
+    if dictionary['savefolder'] == None:
+        dictionary['savefolder'] = Path.cwd().joinpath('output_TiEMPO')
+    else:
+        dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
+    dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
+    dictionary = convert_grid(dictionary)
+    
     length_EL_vector = 25
     length_pwv_vector = 25
 
@@ -55,7 +81,7 @@ def new_filterbank(dictionary):
 
 def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder, save_P=True, save_T=True, n_jobs = 30, n_batches = 8,\
                    obs_time = 2., grid = .2, x_length_strip = 65536., separation = 1.1326,\
-                   luminosity = 13.7, redshift = 4.43, linewidth = 600, \
+                   galaxy_on = True, luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, EL_vec = None, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
                    num_bins = 1500, spec_res = 500, f_spacing = 500, \
                    num_filters = 347, beam_radius = 5., useDESIM = 1, \
@@ -90,6 +116,8 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
         The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536.
     separation : float, optional
         Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
+    galaxy_on : bool, optional
+        Determines whether there is a galaxy in position 2. The default is True.
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -125,7 +153,7 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     D1 : int, optional
         1 or 0. Determines whether DESHIMA 1.0 is simulated. The default is 0.
     dictionary_name : string, optional
-        name of a txt file in which the values of optional keywords are saved. prefix_atm_data, sourcefolder, save_name_data, savefolder, n_jobs, save_P, save_T and EL_vec must still be set outside the file. Only used when input_dictionary is set to 'path'. The default is ''. Order of the entries in the txt file must be: F_min, num_bins, spec_res, f_spacing, num_filters, beam_radius, useDESIM, inclAtmosphere, D1, time, grid, x_length_strip, luminosity, redshift, linewidth, EL, max_num_strips, pwv_0, windspeed, n_batches.
+        name of a txt file in which the values of optional keywords are saved. prefix_atm_data, sourcefolder, save_name_data, savefolder, n_jobs, save_P, save_T and EL_vec must still be set outside the file. Only used when input_dictionary is set to 'path'. The default is ''. Order of the entries in the txt file must be: F_min, num_bins, spec_res, f_spacing, num_filters, beam_radius, useDESIM, inclAtmosphere, D1, time, grid, x_length_strip, galaxy_on, luminosity, redshift, linewidth, EL, max_num_strips, pwv_0, windspeed, n_batches.
 
     Returns
     -------
@@ -185,14 +213,15 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
             'grid':d[10],
             'x_length_strip':d[11],
             'separation':d[12],
-            'luminosity':d[13],
-            'redshift':d[14],
-            'linewidth':d[15],
-            'EL':d[16],
-            'max_num_strips':d[17],
-            'pwv_0':d[18],
-            'windspeed':d[19],
-            'n_batches':d[20],
+            'galaxy_on':d[13],
+            'luminosity':d[14],
+            'redshift':d[15],
+            'linewidth':d[16],
+            'EL':d[17],
+            'max_num_strips':d[18],
+            'pwv_0':d[19],
+            'windspeed':d[20],
+            'n_batches':d[21],
             'save_P': save_P,
             'save_T': save_T,
             'prefix_atm_data':prefix_atm_data,
@@ -203,11 +232,12 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
             'EL_vec': EL_vec
         }
         return dictionary
-    dictionary['n_jobs'] = n_jobs
+    dictionary['n_jobs'] = int(n_jobs)
     dictionary['time'] = obs_time
     dictionary['prefix_atm_data']= prefix_atm_data
     dictionary['grid']= grid
     dictionary['x_length_strip']= float(x_length_strip)
+    dictionary['galaxy_on'] = galaxy_on
     dictionary['luminosity']= luminosity
     dictionary['redshift']= redshift
     dictionary['linewidth']= linewidth
@@ -221,13 +251,13 @@ def get_dictionary(input_dictionary, prefix_atm_data, sourcefolder, save_name_da
     dictionary['EL_vec'] = EL_vec
     dictionary['save_P'] = save_P
     dictionary['save_T'] = save_T
-    dictionary['n_batches'] = n_batches
+    dictionary['n_batches'] = int(n_batches)
     dictionary['separation'] = separation
     return dictionary
 
 def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, savefolder = None, save_P=True, save_T=True, n_jobs = 30, n_batches = 8,\
                    obs_time = 3600., grid = .2, x_length_strip = 65536., separation = 1.1326,\
-                   luminosity = 13.7, redshift = 4.43, linewidth = 600, \
+                   galaxy_on = True, luminosity = 13.7, redshift = 4.43, linewidth = 600, \
                    EL = 60, EL_vec=None, max_num_strips = 32, pwv_0 = 1., F_min = 220e9, \
                    num_bins = 1500, spec_res = 500, f_spacing = 500, \
                    num_filters = 347, beam_radius = 5., useDESIM = 1, \
@@ -254,13 +284,15 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     n_batches : int
         number of batches the entire observation is divided up into. Default is 8.
     obs_time : float, optional
-        Length of the observation in seconds. The default is 2..
+        Length of the observation in seconds. The default is 2.0.
     grid : float, optional
         The width of a grid square in the atmosphere map in meters. The default is .2.
     x_length_strip : int, optional
         The length of one atmosphere strip in the x direction in number of gridpoints (NOT METERS). The default is 65536.
     separation : float, optional
         Separation between two chop positions in m, assuming that the atmosphere is at 1km height. Default is 1.1326 (this corresponds to 116.8 arcsec).
+    galaxy_on : bool, optional
+        Determines whether there is a galaxy in position 2. T The default is True.
     luminosity : float, optional
         Luminosity if the galaxy in log(L_fir [L_sol]). The default is 13.7.
     redshift : float, optional
@@ -312,14 +344,31 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     """
     dictionary = get_dictionary(input_dictionary, prefix_atm_data, sourcefolder,\
                                 save_name_data, savefolder, save_P, save_T, n_jobs, n_batches, obs_time, grid, \
-                                x_length_strip, separation,luminosity, redshift, \
+                                x_length_strip, separation, galaxy_on,luminosity, redshift, \
                                 linewidth, EL, EL_vec, max_num_strips, pwv_0, F_min, \
                                 num_bins, spec_res, f_spacing, num_filters, \
                                 beam_radius, useDESIM, inclAtmosphere, \
                                 windspeed, D1, dictionary_name)
+    if dictionary['savefolder'] == None:
+        dictionary['savefolder'] = Path.cwd().joinpath('output_TiEMPO')
+    else:
+        dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
+    dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
+    dictionary = convert_grid(dictionary)
+    
     max_obs_time = calcMaxObsTime(dictionary)
     if obs_time > max_obs_time:
         raise ValueError('obs_time must be smaller than: ', max_obs_time)
+        
+    num_steps = dictionary['separation'] / (dictionary['windspeed']/160)
+    if round(num_steps) != num_steps:
+        raise ValueError('Separation is not an integer multiple of atmosphere distance per sample. Consider changing the windspeed to {} m/s or {} m/s instead of {} m/s'.format(dictionary['separation']*160/np.ceil(num_steps), dictionary['separation']*160/np.floor(num_steps), dictionary['windspeed']))
+    
+    if dictionary['n_jobs'] < 1:
+        raise ValueError('Please set a number of threads greater than or equal to 1 in n_jobs.')
+    
+    if dictionary['n_batches'] < 1:
+        raise ValueError('Please set a number of signal batches greater than or equal to 1 in n_batches.')
     
     st1 = st.signal_transmitter(dictionary)
     [time_vector, center_freq] = st1.transmit_signal_DESIM_multf_atm()
