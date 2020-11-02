@@ -349,14 +349,17 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
         dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
     dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
     
-    max_obs_time = calcMaxObsTime(dictionary)
-    if obs_time > max_obs_time:
-        raise ValueError('obs_time must be smaller than: ', max_obs_time)
-        
+    if round(dictionary['separation']/dictionary['grid']) != 1e-6*round(1e6*dictionary['separation']/dictionary['grid']):
+        raise ValueError('The separation is not an integer multiple of the ARIS grid size. Consider changing the separation to {:.5f} m or {:.5f} m instead of {} m'.format(dictionary['grid']*np.floor(dictionary['separation']/dictionary['grid']), dictionary['grid']*np.ceil(dictionary['separation']/dictionary['grid']), dictionary['separation']))
+    
     num_steps = dictionary['separation'] / (dictionary['windspeed']/160)
     if round(num_steps) != num_steps:
         raise ValueError('Separation is not an integer multiple of atmosphere distance per sample. Consider changing the windspeed to {} m/s or {} m/s instead of {} m/s'.format(dictionary['separation']*160/np.ceil(num_steps), dictionary['separation']*160/np.floor(num_steps), dictionary['windspeed']))
     
+    max_obs_time = calcMaxObsTime(dictionary)
+    if obs_time > max_obs_time:
+        raise ValueError('obs_time must be smaller than: ', max_obs_time)
+        
     if dictionary['n_jobs'] < 1:
         raise ValueError('Please set a number of threads greater than or equal to 1 in n_jobs.')
     
