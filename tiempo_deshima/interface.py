@@ -37,12 +37,6 @@ def convert_folder(folder):
     sourcepath = sourcepath.joinpath(folder)
     return sourcepath
 
-def convert_grid(dictionary):
-    length_m = dictionary['x_length_strip'] * dictionary['grid']
-    dictionary['grid'] = dictionary['separation'] / 5.0
-    dictionary['x_length_strip'] = length_m / dictionary['grid']
-    return dictionary
-
 def new_filterbank(dictionary):
     """
     Parameters
@@ -354,7 +348,6 @@ def run_tiempo(input_dictionary, prefix_atm_data, sourcefolder, save_name_data, 
     else:
         dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
     dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
-    dictionary = convert_grid(dictionary)
     
     max_obs_time = calcMaxObsTime(dictionary)
     if obs_time > max_obs_time:
