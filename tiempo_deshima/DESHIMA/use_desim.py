@@ -1,8 +1,8 @@
 import numpy as np
 import math
 
-from .desim import minidesim as dsm
-# import DESHIMA.desim.minidesim as dsm
+# from .desim import minidesim as dsm
+import DESHIMA.desim.minidesim as dsm
 
 class use_desim(object):
 

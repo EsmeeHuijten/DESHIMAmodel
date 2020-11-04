@@ -4,12 +4,12 @@ This module allows users to execute funtioncs in signal_transmitter, while provi
 
 
 import numpy as np
-import signal_transmitter as st
-import DESHIMA.MKID.filterbank as ft
+#import signal_transmitter as st
+#import DESHIMA.MKID.filterbank as ft
 from pathlib import Path
 
-#from . import signal_transmitter as st
-#from .DESHIMA.MKID import filterbank as ft
+from . import signal_transmitter as st
+from .DESHIMA.MKID import filterbank as ft
 import os
 
 def calcMaxObsTime(dictionary):
@@ -55,7 +55,6 @@ def new_filterbank(dictionary):
     else:
         dictionary['savefolder'] = convert_folder(dictionary['savefolder'])
     dictionary['sourcefolder'] = convert_folder(dictionary['sourcefolder'])
-    dictionary = convert_grid(dictionary)
     
     length_EL_vector = 25
     length_pwv_vector = 25
