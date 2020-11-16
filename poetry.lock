@@ -101,7 +101,7 @@ description = "Creates sample galaxy spectra in the GHz/THz range"
 name = "galspec"
 optional = false
 python-versions = ">=3.6"
-version = "0.2.3"
+version = "0.2.5"
 
 [[package]]
 category = "main"
@@ -529,7 +529,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [metadata]
-content-hash = "bbd279418d2975becbea78eaf62bc107f1b1e7db7cc9c9fc82698871ffb0d935"
+content-hash = "90f9fbdaf6279561800ecbc0130def84f335b8977f0ae609e570270214942616"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -589,8 +589,8 @@ docutils = [
     {file = "docutils-0.16.tar.gz", hash = "sha256:c2de3a60e9e7d07be26b7f2b00ca0309c207e06c100f9cc2a94931fc75a478fc"},
 ]
 galspec = [
-    {file = "galspec-0.2.3-py3-none-any.whl", hash = "sha256:5eca5278ca39f76ea7c779485677c197f4769827630d992b592a03ebc2118f22"},
-    {file = "galspec-0.2.3.tar.gz", hash = "sha256:e4312e5b4ad53c8a467e2d1c47d5d53a7130ebe667d0bdedb2c8a86ac7cb338f"},
+    {file = "galspec-0.2.5-py3-none-any.whl", hash = "sha256:0efe3da56c0813b41d89c06f6ada8e848e43840fbebfdae5078aed528faab7d5"},
+    {file = "galspec-0.2.5.tar.gz", hash = "sha256:011a24d206b0dfbee47d0a9d7cb8b909ac7509e87f4cb460dacad45d0f466cf3"},
 ]
 idna = [
     {file = "idna-2.10-py2.py3-none-any.whl", hash = "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"},
