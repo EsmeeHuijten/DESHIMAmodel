@@ -44,7 +44,7 @@ class use_ARIS(object):
         """
         a = 5.536e-4
         b = 3.049e-5
-        T = 275
+        T = 273
         rho = 55.4e3
         R = 8.314459
         e = R * T * pwv/(use_ARIS.h - b * pwv * rho) - (a * (pwv**2) * (rho**2)) / (use_ARIS.h**2)
@@ -62,7 +62,7 @@ class use_ARIS(object):
         """
         k2 = 70.4e2 #K/kPa
         k3 = 3.739e7 #K**2/kPa
-        T = 275
+        T = 273
         e = 1e6/self.h * EPL/(k2/T + k3/(T**2))
         return e
     """
