@@ -85,8 +85,8 @@ class signal_transmitter(object):
 
     def rolldata(self, data):
         sampdiff = int(self.sampling_rate*self.separation/self.windspeed)
-        data[0,:,:] = np.roll(data[0,:,:], -sampdiff, axis = 2)
-        data[2,:,:] = np.roll(data[2,:,:], sampdiff, axis = 2)
+        data[0,:,:] = np.roll(data[0,:,:], -sampdiff, axis = 1)
+        data[2,:,:] = np.roll(data[2,:,:], sampdiff, axis = 1)
         data = data[:,:,sampdiff:-sampdiff]
         return data
         
