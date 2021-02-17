@@ -185,7 +185,7 @@ class signal_transmitter(object):
                 if self.save_T:
                     T_sky_matrix = np.zeros(power_matrix_res.shape)
                     for k in range(power_matrix[0].shape[0]):
-                        for i in range(step_round):
+                        for i in range(step_round-int(self.sampling_rate*self.separation/self.windspeed)):
                             self.EL = self.EL_vec[inputs[i]]
                             T_sky_matrix[k, :, i] = self.convert_P_to_Tsky(power_matrix_res[k,:,i], self.filters)
                     path_T = self.save_path.joinpath(self.save_name_data + "_T_" + str(l))
